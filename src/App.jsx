@@ -134,6 +134,11 @@ const CP_MEMBERS = {
   cp13: ["North", "Otto"],
 };
 
+// 멤버명 -> 소속 CP id 역매핑 (Gen/멤버 필터 시 해당 멤버의 CP 색을 찾는 데 사용)
+const MEMBER_TO_CP = Object.fromEntries(
+  Object.entries(CP_MEMBERS).flatMap(([cpId, names]) => names.map((n) => [n, cpId]))
+);
+
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -1008,10 +1013,7 @@ export default function App() {
           className="rounded-2xl px-4 py-2.5 flex items-center justify-between"
           style={{ background: "#111111", textDecoration: "none" }}
         >
-          <div>
-            <p className="text-sm font-semibold m-0" style={{ color: "#fff" }}>DMD Late Check-In 블로그</p>
-            <p className="text-xs m-0 mt-0.5" style={{ color: "#B0B0B5" }}>블로그 바로가기</p>
-          </div>
+          <span className="text-sm font-medium" style={{ color: "#fff" }}>DMD Late Check-In 블로그 바로가기</span>
           <ExternalLink size={14} style={{ color: "#fff" }} />
         </a>
 
@@ -1129,6 +1131,14 @@ export default function App() {
                 if (filterCategory === "CP" && filterValue !== "__ALL__" && ev.cps?.includes(filterValue)) {
                   const c = settings.cpList.find((cc) => cc.id === filterValue);
                   if (c) return c.color;
+                }
+                if (filterCategory !== "CP" && filterValue !== "__ALL__") {
+                  // 특정 멤버 선택: 그 멤버가 속한 CP가 이 일정에 걸려있으면 그 CP 색을 사용
+                  const memberCpId = MEMBER_TO_CP[filterValue];
+                  if (memberCpId && ev.cps?.includes(memberCpId)) {
+                    const c = settings.cpList.find((cc) => cc.id === memberCpId);
+                    if (c) return c.color;
+                  }
                 }
                 return colorForEvent(ev);
               };
