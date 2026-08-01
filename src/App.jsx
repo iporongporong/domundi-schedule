@@ -986,7 +986,7 @@ export default function App() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center" style={{ background: "#F1F1F1" }}>불러오는 중...</div>;
+    return <div className="min-h-screen flex items-center justify-center" style={{ background: "#F1F1F1" }}>Domundi 스케줄 불러오는 중...</div>;
   }
 
   return (
