@@ -825,8 +825,8 @@ export default function App() {
   const [detailEvent, setDetailEvent] = useState(null);
   const [editingEvent, setEditingEvent] = useState(undefined); // undefined = closed, null = new, obj = edit
   const [showSettings, setShowSettings] = useState(false);
-  const [filterCategory, setFilterCategory] = useState("CP"); // "ALL" | "CP" | "G1".."G6"
-  const [filterValue, setFilterValue] = useState("cp10"); // 기본값: AuauSave
+  const [filterCategory, setFilterCategory] = useState("ALL"); // "ALL" | "CP" | "G1".."G6"
+  const [filterValue, setFilterValue] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [pinModal, setPinModal] = useState(null); // null | "setup" | "unlock"
   const [pinError, setPinError] = useState("");
@@ -1060,7 +1060,7 @@ export default function App() {
                 const cat = e.target.value;
                 setFilterCategory(cat);
                 if (cat === "ALL") setFilterValue("");
-                else if (cat === "CP") setFilterValue(settings.cpList[0]?.id || "");
+                else if (cat === "CP") setFilterValue("__ALL__");
                 else setFilterValue("__ALL__");
               }}
             >
