@@ -237,6 +237,36 @@ function TicketChip({ color, colors, label, onClick, muted }) {
   );
 }
 
+// 아이폰 캘린더 앱 스타일의 일정 목록 아이템 (시간 열 + 컬러바 + 제목/부제)
+function DayListItem({ ev, colors, subtitle, onClick }) {
+  const barColor = colors && colors[0] ? colors[0] : "#A8A296";
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-stretch gap-3 py-2.5 text-left"
+      style={{ borderBottom: "1px solid #F0F0F2" }}
+    >
+      <div className="flex-shrink-0 text-right" style={{ width: 52 }}>
+        <p className="text-sm font-medium" style={{ color: "#111111", fontFamily: "'Inter',sans-serif" }}>
+          {ev.allDay ? "종일" : (ev.time || "미확정")}
+        </p>
+      </div>
+      <div className="flex flex-shrink-0" style={{ gap: 2 }}>
+        {colors.map((c, i) => (
+          <span key={i} style={{ width: 3, borderRadius: 999, background: c, alignSelf: "stretch" }} />
+        ))}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-base font-bold truncate" style={{ color: "#111111", fontFamily: "'Inter',sans-serif" }}>{ev.title}</p>
+        {subtitle && <p className="text-sm truncate" style={{ color: "#8E8E93", fontFamily: "'Inter',sans-serif" }}>{subtitle}</p>}
+      </div>
+      <div className="flex-shrink-0 self-center">
+        <ChevronRight size={16} style={{ color: "#C7C7CC" }} />
+      </div>
+    </button>
+  );
+}
+
 function Badge({ color, children }) {
   return (
     <span
@@ -271,6 +301,7 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
   const [title, setTitle] = useState(initial?.title || "");
   const [date, setDate] = useState(initial?.date || todayKey);
   const [time, setTime] = useState(initial?.time || "");
+  const [allDay, setAllDay] = useState(initial?.allDay || false);
   const [cps, setCps] = useState(initial?.cps || (initial?.cp ? [initial.cp] : []));
   const [gens, setGens] = useState(initial?.gens || []);
   const [members, setMembers] = useState(initial?.members || []);
@@ -375,6 +406,7 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
       title: trimmedTitle || fallbackTitle(),
       date,
       time,
+      allDay,
       cps,
       gens,
       members,
@@ -406,9 +438,28 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
         </div>
         <div>
           <label className={label} style={{ color: "#8E8E93" }}>시간 (선택)</label>
-          <input type="time" className={input} style={{ borderColor: "#E5E5EA" }} value={time} onChange={(e) => setTime(e.target.value)} />
+          <input
+            type="time"
+            className={input}
+            style={{ borderColor: "#E5E5EA", opacity: allDay ? 0.4 : 1 }}
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            disabled={allDay}
+          />
         </div>
       </div>
+
+      <label className="flex items-center gap-2 mt-2 text-sm" style={{ color: "#111111" }}>
+        <input
+          type="checkbox"
+          checked={allDay}
+          onChange={(e) => {
+            setAllDay(e.target.checked);
+            if (e.target.checked) setTime("");
+          }}
+        />
+        종일
+      </label>
 
       <label className={`${label} mt-3`} style={{ color: "#8E8E93" }}>국가 (기본값: 태국)</label>
       <input className={input} style={{ borderColor: "#E5E5EA" }} value={country} onChange={(e) => setCountry(e.target.value)} placeholder="태국" />
@@ -515,7 +566,7 @@ function EventDetail({ event, cpList, onEdit, onClose, canEdit }) {
           <button onClick={onClose}><X size={20} /></button>
         </div>
         <p className="text-sm mt-1" style={{ color: "#8E8E93", fontFamily: "'Inter',sans-serif" }}>
-          {event.date} {event.time && `· ${event.time}`}{event.country && ` · ${event.country}`}
+          {event.date} {event.allDay ? "· 종일" : event.time && `· ${event.time}`}{event.country && ` · ${event.country}`}
         </p>
 
         <div className="flex flex-wrap gap-1.5 mt-3">
@@ -784,9 +835,12 @@ export default function App() {
     }
     Object.values(map).forEach((arr) =>
       arr.sort((a, b) => {
-        if (!a.time && b.time) return 1;
-        if (a.time && !b.time) return -1;
-        return (a.time || "").localeCompare(b.time || "");
+        const rank = (ev) => (ev.allDay ? 0 : ev.time ? 1 : 2);
+        const ra = rank(a);
+        const rb = rank(b);
+        if (ra !== rb) return ra - rb;
+        if (ra === 1) return a.time.localeCompare(b.time);
+        return 0;
       })
     );
     return map;
@@ -827,6 +881,15 @@ export default function App() {
       parts.push(ev.gens.join("/"));
     }
     return parts.length ? parts.join(" · ") : ev.title;
+  };
+
+  // 제목과 별개로 CP/멤버/Gen 정보만 부제로 반환 (없으면 빈 문자열)
+  const subtitleForEvent = (ev) => {
+    const cpNames = (ev.cps || []).map((id) => settings.cpList.find((c) => c.id === id)?.name).filter(Boolean);
+    if (cpNames.length) return cpNames.join(" · ");
+    if (ev.members?.length) return ev.members.join(", ");
+    if (ev.gens?.length) return ev.gens.join("/");
+    return "";
   };
 
   const handleSaveEvent = (ev) => {
@@ -896,7 +959,7 @@ export default function App() {
                       <span style={{ width: 3, alignSelf: "stretch", minHeight: 32, borderRadius: 999, background: colorForEvent(ev), flexShrink: 0 }} />
                       <div>
                         <p className="text-sm font-semibold" style={{ color: "#111111" }}>{labelForEvent(ev)}</p>
-                        {ev.time && <p className="text-xs" style={{ color: "#8E8E93" }}>{ev.time}</p>}
+                        {(ev.allDay || ev.time) && <p className="text-xs" style={{ color: "#8E8E93" }}>{ev.allDay ? "종일" : ev.time}</p>}
                       </div>
                     </div>
                   ))}
@@ -955,6 +1018,20 @@ export default function App() {
                     ]}
               </select>
             )}
+
+            {filterCategory !== "ALL" && (
+              <button
+                onClick={() => {
+                  setFilterCategory("ALL");
+                  setFilterValue("");
+                }}
+                className="flex-shrink-0 flex items-center justify-center rounded-lg"
+                style={{ width: 30, height: 30, background: "#F0F0F2" }}
+                title="필터 초기화"
+              >
+                <X size={14} style={{ color: "#8E8E93" }} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -987,7 +1064,7 @@ export default function App() {
                     minHeight: 0,
                   }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center">
                     <span
                       className="inline-flex items-center justify-center text-sm font-bold"
                       style={{
@@ -1000,12 +1077,15 @@ export default function App() {
                     >
                       {d.getDate()}
                     </span>
-                    {visibleEvents.length > 0 && (
-                      <span className="text-xs font-normal" style={{ color: birthdayNames.length > 0 ? "#fff" : "#8E8E93" }}>
-                        +{visibleEvents.length}
-                      </span>
-                    )}
                   </div>
+                  {visibleEvents.length > 0 && (
+                    <span
+                      className="absolute bottom-1 right-1.5 text-xs font-normal"
+                      style={{ color: birthdayNames.length > 0 ? "#fff" : "#8E8E93" }}
+                    >
+                      +{visibleEvents.length}
+                    </span>
+                  )}
                 </div>
               );
             })}
@@ -1039,12 +1119,18 @@ export default function App() {
                 <p className="text-sm mb-3 flex items-center gap-1.5"><Cake size={16} style={{ color: "#9DA9EB" }} /> {names.join(", ")} 생일</p>
               ) : null;
             })()}
-            <div className="space-y-2">
+            <div>
               {(eventsByDay[dayKey] || []).filter(eventMatchesFilter).length === 0 && (
                 <p className="text-sm" style={{ color: "#8E8E93" }}>등록된 일정이 없습니다.</p>
               )}
               {(eventsByDay[dayKey] || []).filter(eventMatchesFilter).map((ev) => (
-                <TicketChip key={ev.id} colors={colorsForEvent(ev)} label={`${ev.time ? ev.time : "미확정"} · ${labelForEvent(ev)}`} onClick={() => setDetailEvent(ev)} />
+                <DayListItem
+                  key={ev.id}
+                  ev={ev}
+                  colors={colorsForEvent(ev)}
+                  subtitle={subtitleForEvent(ev)}
+                  onClick={() => setDetailEvent(ev)}
+                />
               ))}
             </div>
             {unlocked && (
