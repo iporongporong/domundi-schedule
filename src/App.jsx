@@ -997,13 +997,13 @@ export default function App() {
           <button onClick={handleGearClick} style={{ color: unlocked ? "#111111" : "#8E8E93" }}><SettingsIcon size={20} /></button>
         </div>
 
-        {/* Blog link - unified with birthday lavender accent */}
+        {/* Blog link - unified with black accent */}
         <a
           href="https://blog.naver.com/boyslog"
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-2xl px-4 py-2.5 flex items-center justify-between"
-          style={{ background: "#9DA9EB", textDecoration: "none" }}
+          style={{ background: "#111111", textDecoration: "none" }}
         >
           <span className="text-sm font-medium" style={{ color: "#fff" }}>DMD Late Check-In 블로그</span>
           <ExternalLink size={14} style={{ color: "#fff" }} />
@@ -1264,4 +1264,3 @@ export default function App() {
     </div>
   );
 }
-
