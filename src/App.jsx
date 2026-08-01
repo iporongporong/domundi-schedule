@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, X, Plus, Settings as SettingsIcon, Trash2, Pencil, Image as ImageIcon, Users, CalendarDays, Check, Cake, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, Settings as SettingsIcon, Trash2, Pencil, Image as ImageIcon, Users, CalendarDays, Check, Cake, ExternalLink, Star } from "lucide-react";
 import { dbGet, dbSet } from "./firebase.js";
 
 // ---------- helpers ----------
@@ -1133,7 +1133,12 @@ export default function App() {
                   title={birthdayNames.length > 0 ? `${birthdayNames.join(", ")} 생일` : undefined}
                   className="rounded-xl p-1.5 h-[64px] sm:h-[74px] cursor-pointer relative flex flex-col overflow-hidden"
                   style={{
-                    background: birthdayNames.length > 0 ? "#9DA9EBCC" : "#F8F8F8",
+                    background:
+                      filterCategory !== "ALL" && visibleEvents.length > 0
+                        ? dayColors[0]
+                        : filterCategory === "ALL" && birthdayNames.length > 0
+                        ? "#9DA9EBCC"
+                        : "#F8F8F8",
                     opacity: inMonth ? 1 : 0.35,
                     minHeight: 0,
                   }}
@@ -1146,7 +1151,7 @@ export default function App() {
                         height: 24,
                         borderRadius: 999,
                         background: isToday ? "#111111" : "transparent",
-                        color: isToday ? "#fff" : "#111111",
+                        color: isToday ? "#fff" : filterCategory !== "ALL" && visibleEvents.length > 0 ? "#fff" : "#111111",
                       }}
                     >
                       {d.getDate()}
@@ -1155,7 +1160,14 @@ export default function App() {
                   {visibleEvents.length > 0 && (
                     <span
                       className="absolute bottom-1 right-1.5 text-xs font-normal"
-                      style={{ color: birthdayNames.length > 0 ? "#fff" : "#8E8E93" }}
+                      style={{
+                        color:
+                          filterCategory !== "ALL"
+                            ? "#fff"
+                            : birthdayNames.length > 0
+                            ? "#fff"
+                            : "#8E8E93",
+                      }}
                     >
                       +{visibleEvents.length}
                     </span>
