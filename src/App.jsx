@@ -899,7 +899,10 @@ export default function App() {
 
   const eventMatchesFilter = (ev) => {
     if (filterCategory === "ALL") return true;
-    if (filterCategory === "CP") return ev.cps?.includes(filterValue);
+    if (filterCategory === "CP") {
+      if (filterValue === "__ALL__") return (ev.cps || []).length > 0;
+      return ev.cps?.includes(filterValue);
+    }
     if (filterValue === "__ALL__") return ev.gens?.includes(filterCategory);
     return ev.members?.includes(filterValue);
   };
@@ -1043,7 +1046,7 @@ export default function App() {
             <button onClick={() => setCursor(new Date(year, month - 1, 1))} className="p-1.5 rounded-full" style={{ background: "#F0F0F2" }}><ChevronLeft size={16} /></button>
             <div className="flex items-center gap-2">
               <span className="text-base font-bold" style={{ color: "#111111" }}>{year}. {MONTH_NAMES[month]}</span>
-              <button onClick={() => setCursor(new Date())} className="text-xs px-2 py-1 rounded-full font-medium" style={{ background: "#F0F0F2", color: "#8E8E93" }}>오늘</button>
+              <button onClick={() => setCursor(new Date())} className="text-xs px-2.5 py-1 rounded-full font-semibold" style={{ background: "#111111", color: "#fff" }}>오늘</button>
             </div>
             <button onClick={() => setCursor(new Date(year, month + 1, 1))} className="p-1.5 rounded-full" style={{ background: "#F0F0F2" }}><ChevronRight size={16} /></button>
           </div>
@@ -1076,7 +1079,10 @@ export default function App() {
                 onChange={(e) => setFilterValue(e.target.value)}
               >
                 {filterCategory === "CP"
-                  ? [...settings.cpList].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)
+                  ? [
+                      <option key="__ALL__" value="__ALL__">전체 CP</option>,
+                      ...[...settings.cpList].sort((a, b) => a.name.localeCompare(b.name)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>),
+                    ]
                   : [
                       <option key="__ALL__" value="__ALL__">전체 인원</option>,
                       ...Object.keys(MEMBER_GEN_MAP)
