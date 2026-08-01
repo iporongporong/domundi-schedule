@@ -825,8 +825,8 @@ export default function App() {
   const [detailEvent, setDetailEvent] = useState(null);
   const [editingEvent, setEditingEvent] = useState(undefined); // undefined = closed, null = new, obj = edit
   const [showSettings, setShowSettings] = useState(false);
-  const [filterCategory, setFilterCategory] = useState("ALL"); // "ALL" | "CP" | "G1".."G6"
-  const [filterValue, setFilterValue] = useState("");
+  const [filterCategory, setFilterCategory] = useState("CP"); // "ALL" | "CP" | "G1".."G6"
+  const [filterValue, setFilterValue] = useState("cp10"); // 기본값: AuauSave
   const [unlocked, setUnlocked] = useState(false);
   const [pinModal, setPinModal] = useState(null); // null | "setup" | "unlock"
   const [pinError, setPinError] = useState("");
@@ -997,7 +997,7 @@ export default function App() {
           <button onClick={handleGearClick} style={{ color: unlocked ? "#111111" : "#8E8E93" }}><SettingsIcon size={20} /></button>
         </div>
 
-        {/* Blog link - unified with black accent */}
+        {/* Blog link - black accent (user's preferred choice) */}
         <a
           href="https://blog.naver.com/boyslog"
           target="_blank"
@@ -1050,8 +1050,8 @@ export default function App() {
 
           <div className="flex gap-1.5 mt-3">
             <select
-              className="border-0 rounded-lg px-2 py-1.5 text-xs font-medium"
-              style={{ background: "#F0F0F2", flex: "0 0 96px" }}
+              className="border-0 rounded-lg px-2 py-2 text-sm font-medium"
+              style={{ background: "#F0F0F2", flex: "0 0 100px" }}
               value={filterCategory}
               onChange={(e) => {
                 const cat = e.target.value;
@@ -1070,7 +1070,7 @@ export default function App() {
 
             {filterCategory !== "ALL" && (
               <select
-                className="border-0 rounded-lg px-2 py-1.5 text-xs font-medium flex-1 min-w-0"
+                className="border-0 rounded-lg px-2 py-2 text-sm font-medium flex-1 min-w-0"
                 style={{ background: "#F0F0F2" }}
                 value={filterValue}
                 onChange={(e) => setFilterValue(e.target.value)}
