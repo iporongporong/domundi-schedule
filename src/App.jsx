@@ -115,8 +115,8 @@ const CP_NAMES = [
 
 // 지정된 파스텔 팔레트 (순서: MaxNat → NorthOtto) — 원본 이미지에서 픽셀 추출
 const CP_COLORS = [
-  "#FCD9E4", "#F89459", "#C7DDE4", "#F3EDE5", "#EAA7A4", "#FE93C1", "#604D40",
-  "#FEDAB6", "#A8DBFA", "#74B9F1", "#CED3E5", "#D7CEE5", "#E4CFE5",
+  "#F7A4B8", "#F38A83", "#EE544D", "#F57E43", "#F9BE51", "#FDD443", "#9EC793",
+  "#3B9D6A", "#0C77AF", "#16A6CA", "#8FA5D0", "#6D6685", "#C8B0E8",
 ];
 
 const defaultCPList = () =>
@@ -953,15 +953,15 @@ export default function App() {
               {todays.length === 0 ? (
                 <p className="text-sm mt-2" style={{ color: "#8E8E93" }}>오늘은 등록된 일정이 없어요.</p>
               ) : (
-                <div className="mt-3 space-y-2.5 overflow-y-auto" style={{ maxHeight: 220 }}>
+                <div className="mt-3 overflow-y-auto" style={{ maxHeight: 220 }}>
                   {todays.map((ev) => (
-                    <div key={ev.id} className="flex items-start gap-2.5 cursor-pointer" onClick={() => setDetailEvent(ev)}>
-                      <span style={{ width: 3, alignSelf: "stretch", minHeight: 32, borderRadius: 999, background: colorForEvent(ev), flexShrink: 0 }} />
-                      <div>
-                        <p className="text-sm font-semibold" style={{ color: "#111111" }}>{labelForEvent(ev)}</p>
-                        {(ev.allDay || ev.time) && <p className="text-xs" style={{ color: "#8E8E93" }}>{ev.allDay ? "종일" : ev.time}</p>}
-                      </div>
-                    </div>
+                    <DayListItem
+                      key={ev.id}
+                      ev={ev}
+                      colors={colorsForEvent(ev)}
+                      subtitle={subtitleForEvent(ev)}
+                      onClick={() => setDetailEvent(ev)}
+                    />
                   ))}
                 </div>
               )}
@@ -1116,7 +1116,7 @@ export default function App() {
               const [, mm, dd] = dayKey.split("-");
               const names = Object.entries(settings.birthdays || {}).filter(([, md]) => md === `${mm}-${dd}`).map(([n]) => n);
               return names.length > 0 ? (
-                <p className="text-sm mb-3 flex items-center gap-1.5"><Cake size={16} style={{ color: "#9DA9EB" }} /> {names.join(", ")} 생일</p>
+                <p className="text-base font-medium mb-3 flex items-center gap-2"><Cake size={19} style={{ color: "#9DA9EB" }} /> {names.join(", ")} 생일</p>
               ) : null;
             })()}
             <div>
