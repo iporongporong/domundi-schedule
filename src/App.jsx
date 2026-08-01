@@ -997,16 +997,16 @@ export default function App() {
           <button onClick={handleGearClick} style={{ color: unlocked ? "#111111" : "#8E8E93" }}><SettingsIcon size={20} /></button>
         </div>
 
-        {/* Blog link - medium emphasis */}
+        {/* Blog link - unified with black accent */}
         <a
           href="https://blog.naver.com/boyslog"
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-2xl px-4 py-2.5 flex items-center justify-between"
-          style={{ background: "#EEF0FC", textDecoration: "none" }}
+          style={{ background: "#111111", textDecoration: "none" }}
         >
-          <span className="text-sm font-medium" style={{ color: "#111111" }}>DMD Late Check-In 블로그</span>
-          <ExternalLink size={14} style={{ color: "#5C6BAA" }} />
+          <span className="text-sm font-medium" style={{ color: "#fff" }}>DMD Late Check-In 블로그</span>
+          <ExternalLink size={14} style={{ color: "#fff" }} />
         </a>
 
         {/* Today summary widget */}
@@ -1094,10 +1094,10 @@ export default function App() {
                   setFilterValue("");
                 }}
                 className="flex-shrink-0 flex items-center justify-center rounded-lg"
-                style={{ width: 30, height: 30, background: "#F0F0F2" }}
+                style={{ width: 30, height: 30, background: "#111111" }}
                 title="필터 초기화"
               >
-                <X size={14} style={{ color: "#8E8E93" }} />
+                <X size={14} style={{ color: "#fff" }} />
               </button>
             )}
           </div>
