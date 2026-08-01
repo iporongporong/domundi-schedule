@@ -1008,7 +1008,10 @@ export default function App() {
           className="rounded-2xl px-4 py-2.5 flex items-center justify-between"
           style={{ background: "#111111", textDecoration: "none" }}
         >
-          <span className="text-sm font-medium" style={{ color: "#fff" }}>DMD Late Check-In 블로그</span>
+          <div>
+            <p className="text-sm font-semibold m-0" style={{ color: "#fff" }}>DMD Late Check-In 블로그</p>
+            <p className="text-xs m-0 mt-0.5" style={{ color: "#B0B0B5" }}>블로그 바로가기</p>
+          </div>
           <ExternalLink size={14} style={{ color: "#fff" }} />
         </a>
 
@@ -1121,7 +1124,16 @@ export default function App() {
               const isToday = key === todayKey;
               const dayEvents = (eventsByDay[key] || []);
               const visibleEvents = dayEvents.filter(eventMatchesFilter);
-              const dayColors = Array.from(new Set(visibleEvents.map(colorForEvent)));
+              // 필터로 특정 CP를 골랐으면 그 CP 색을 우선 사용 (여러 CP가 걸린 일정이어도 선택한 CP 색으로 표시)
+              const colorForFilterMatch = (ev) => {
+                if (filterCategory === "CP" && filterValue !== "__ALL__" && ev.cps?.includes(filterValue)) {
+                  const c = settings.cpList.find((cc) => cc.id === filterValue);
+                  if (c) return c.color;
+                }
+                return colorForEvent(ev);
+              };
+              const dayColors = Array.from(new Set(visibleEvents.map(colorForFilterMatch)));
+              const isSpecificFilter = filterCategory !== "ALL" && filterValue !== "__ALL__";
               const monthDay = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
               const birthdayNames = Object.entries(settings.birthdays || {})
                 .filter(([, md]) => md === monthDay)
@@ -1134,7 +1146,7 @@ export default function App() {
                   className="rounded-xl p-1.5 h-[64px] sm:h-[74px] cursor-pointer relative flex flex-col overflow-hidden"
                   style={{
                     background:
-                      filterCategory !== "ALL" && visibleEvents.length > 0
+                      isSpecificFilter && visibleEvents.length > 0
                         ? dayColors[0]
                         : filterCategory === "ALL" && birthdayNames.length > 0
                         ? "#9DA9EBCC"
@@ -1151,7 +1163,7 @@ export default function App() {
                         height: 24,
                         borderRadius: 999,
                         background: isToday ? "#111111" : "transparent",
-                        color: isToday ? "#fff" : filterCategory !== "ALL" && visibleEvents.length > 0 ? "#fff" : "#111111",
+                        color: isToday ? "#fff" : isSpecificFilter && visibleEvents.length > 0 ? "#fff" : "#111111",
                       }}
                     >
                       {d.getDate()}
@@ -1162,7 +1174,7 @@ export default function App() {
                       className="absolute bottom-1 right-1.5 text-xs font-normal"
                       style={{
                         color:
-                          filterCategory !== "ALL"
+                          isSpecificFilter
                             ? "#fff"
                             : birthdayNames.length > 0
                             ? "#fff"
