@@ -596,7 +596,7 @@ function EventDetail({ event, cpList, onEdit, onClose, canEdit }) {
 }
 
 // ---------- Settings ----------
-function SettingsModal({ settings, onSave, onClose }) {
+function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
   const [cpList, setCpList] = useState(settings.cpList.map((c) => ({ ...c })));
   const [memberList, setMemberList] = useState([...settings.memberList]);
   const [newMember, setNewMember] = useState("");
@@ -605,6 +605,24 @@ function SettingsModal({ settings, onSave, onClose }) {
   const [birthdays, setBirthdays] = useState({ ...(settings.birthdays || {}) });
   const [bdayMember, setBdayMember] = useState(memberList[0] || "");
   const [bdayDate, setBdayDate] = useState("2000-01-01");
+  const [copiedId, setCopiedId] = useState(null);
+  const [importText, setImportText] = useState("");
+  const [importMsg, setImportMsg] = useState("");
+
+  const handleImport = () => {
+    try {
+      const parsed = JSON.parse(importText);
+      if (!Array.isArray(parsed)) {
+        setImportMsg("JSON 배열 형식이어야 해요.");
+        return;
+      }
+      onImportSchedules(parsed);
+      setImportMsg(`${parsed.length}개 일정을 추가했어요.`);
+      setImportText("");
+    } catch (e) {
+      setImportMsg("JSON 형식이 올바르지 않아요. 붙여넣은 내용을 다시 확인해주세요.");
+    }
+  };
 
   const addBirthday = () => {
     if (!bdayMember || !bdayDate) return;
@@ -637,9 +655,22 @@ function SettingsModal({ settings, onSave, onClose }) {
       <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 mb-4">
         {cpList.map((c) => (
           <div key={c.id} className="flex items-center gap-2">
-            <input type="color" value={c.color} onChange={(e) => updateCP(c.id, "color", e.target.value)} className="w-8 h-8 rounded border-0 cursor-pointer" />
+            <input type="color" value={c.color} onChange={(e) => updateCP(c.id, "color", e.target.value)} className="w-8 h-8 rounded border-0 cursor-pointer flex-shrink-0" />
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(c.color.toUpperCase());
+                setCopiedId(c.id);
+                setTimeout(() => setCopiedId((prev) => (prev === c.id ? null : prev)), 1200);
+              }}
+              className="flex-shrink-0 px-2 py-1.5 rounded-md text-xs font-mono"
+              style={{ background: "#F0F0F2", color: "#111111", minWidth: 74 }}
+              title="클릭해서 복사"
+            >
+              {copiedId === c.id ? "복사됨!" : c.color.toUpperCase()}
+            </button>
             <input
-              className="flex-1 border rounded-md px-2 py-1.5 text-sm"
+              className="flex-1 min-w-0 border rounded-md px-2 py-1.5 text-sm"
               style={{ borderColor: "#E5E5EA" }}
               value={c.name}
               onChange={(e) => updateCP(c.id, "name", e.target.value)}
@@ -712,6 +743,26 @@ function SettingsModal({ settings, onSave, onClose }) {
           </span>
         ))}
       </div>
+
+      <h3 className="text-sm font-semibold mb-2">일정 가져오기 (JSON)</h3>
+      <p className="text-xs mb-2" style={{ color: "#8E8E93" }}>
+        Claude가 만들어준 일정 데이터(JSON 배열)를 아래에 붙여넣고 "가져오기"를 누르면 현재 일정 목록에 추가돼요.
+      </p>
+      <textarea
+        className="w-full border rounded-md px-2 py-1.5 text-xs font-mono mb-2"
+        style={{ borderColor: "#E5E5EA", minHeight: 90 }}
+        value={importText}
+        onChange={(e) => setImportText(e.target.value)}
+        placeholder='[{"id":"...", "title":"...", ...}]'
+      />
+      {importMsg && <p className="text-xs mb-2" style={{ color: "#111111" }}>{importMsg}</p>}
+      <button
+        onClick={handleImport}
+        className="w-full py-2 rounded-md text-sm font-medium mb-5"
+        style={{ background: "#F0F0F2", color: "#111111" }}
+      >
+        가져오기
+      </button>
 
       <button
         onClick={() => onSave({ cpList, memberList, cloudName: cloudName.trim(), uploadPreset: uploadPreset.trim(), birthdays })}
@@ -907,6 +958,23 @@ export default function App() {
     persistSchedules(schedules.filter((s) => s.id !== id));
     setEditingEvent(undefined);
     setDetailEvent(null);
+  };
+  const handleImportSchedules = (newEvents) => {
+    const existingIds = new Set(schedules.map((s) => s.id));
+    const withIds = newEvents.map((ev) => ({
+      id: ev.id && !existingIds.has(ev.id) ? ev.id : uid(),
+      title: ev.title || "",
+      date: ev.date || todayKey,
+      time: ev.time || "",
+      allDay: ev.allDay || false,
+      cps: ev.cps || [],
+      gens: ev.gens || [],
+      members: ev.members || [],
+      memo: ev.memo || "",
+      imageUrl: ev.imageUrl || "",
+      country: ev.country || "태국",
+    }));
+    persistSchedules([...schedules, ...withIds]);
   };
 
   if (loading) {
@@ -1189,6 +1257,7 @@ export default function App() {
             settings={settings}
             onSave={(next) => { persistSettings({ ...settings, ...next }); setShowSettings(false); }}
             onClose={() => setShowSettings(false)}
+            onImportSchedules={handleImportSchedules}
           />
         </Modal>
       )}
