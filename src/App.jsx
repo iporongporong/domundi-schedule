@@ -1198,6 +1198,7 @@ export default function App() {
               );
             })}
           </div>
+          <p className="text-xs mt-2 px-0.5" style={{ color: "#8E8E93" }}>* 스케줄 시간은 한국시간(KST) 기준입니다</p>
         </div>
       </div>
 
