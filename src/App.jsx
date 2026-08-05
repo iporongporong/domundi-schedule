@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, X, Plus, Settings as SettingsIcon, Trash2, Pencil, Image as ImageIcon, Users, CalendarDays, Check, Cake, ExternalLink, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, Settings as SettingsIcon, Trash2, Pencil, Image as ImageIcon, Users, CalendarDays, Check, Cake, ExternalLink, Star, Youtube } from "lucide-react";
 import { dbGet, dbSet } from "./firebase.js";
 
 // ---------- helpers ----------
@@ -262,7 +262,7 @@ function DayListItem({ ev, colors, subtitle, onClick }) {
         ))}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-base font-bold truncate" style={{ color: "#111111", fontFamily: "'Inter',sans-serif" }}>{ev.title}</p>
+        <p className="text-base font-bold truncate" style={{ color: "#111111", fontFamily: "'Inter',sans-serif" }}><TitleWithIcons title={ev.title} /></p>
         {subtitle && <p className="text-sm truncate" style={{ color: "#8E8E93", fontFamily: "'Inter',sans-serif" }}>{subtitle}</p>}
       </div>
       <div className="flex-shrink-0 self-center">
@@ -636,6 +636,18 @@ function YouTubeThumbs({ text }) {
   );
 }
 
+// 제목 맨 앞 [YouTube]/[유튜브] 태그를 아이콘으로 치환
+function TitleWithIcons({ title }) {
+  const m = title.match(/^\s*\[(YouTube|유튜브)\]\s*/i);
+  if (!m) return <>{title}</>;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <Youtube size={18} style={{ color: "#FF0000", flexShrink: 0 }} />
+      <span>{title.slice(m[0].length)}</span>
+    </span>
+  );
+}
+
 function EventDetail({ event, cpList, onEdit, onClose, canEdit }) {
   const cpObjs = (event.cps || []).map((id) => cpList.find((c) => c.id === id)).filter(Boolean);
   return (
@@ -645,7 +657,7 @@ function EventDetail({ event, cpList, onEdit, onClose, canEdit }) {
       )}
       <div className="p-5">
         <div className="flex items-start justify-between">
-          <h2 className="text-lg font-semibold pr-2" style={{ fontFamily: "'Inter',sans-serif" }}>{event.title}</h2>
+          <h2 className="text-lg font-semibold pr-2" style={{ fontFamily: "'Inter',sans-serif" }}><TitleWithIcons title={event.title} /></h2>
           <button onClick={onClose}><X size={20} /></button>
         </div>
         <p className="text-sm mt-1" style={{ color: "#8E8E93", fontFamily: "'Inter',sans-serif" }}>
