@@ -558,6 +558,84 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
 }
 
 // ---------- Detail view ----------
+// 텍스트 안의 URL을 찾아 새 탭에서 열리는 링크로 변환
+function Linkify({ text }) {
+  const splitRegex = /(https?:\/\/[^\s]+)/g;
+  const testRegex = /^https?:\/\/[^\s]+$/;
+  const parts = text.split(splitRegex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        testRegex.test(part) ? (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            style={{ color: "#5C6BAA", textDecoration: "underline", wordBreak: "break-all" }}
+          >
+            {part}
+          </a>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        )
+      )}
+    </>
+  );
+}
+
+// 텍스트에서 유튜브 링크를 찾아 영상 ID 목록 반환
+function extractYouTubeIds(text) {
+  const regex = /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,})/g;
+  const ids = [];
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    if (!ids.includes(m[1])) ids.push(m[1]);
+  }
+  return ids;
+}
+
+function YouTubeThumbs({ text }) {
+  const ids = extractYouTubeIds(text);
+  if (!ids.length) return null;
+  return (
+    <div className="flex flex-col gap-2 mt-2">
+      {ids.map((id) => (
+        <a
+          key={id}
+          href={`https://www.youtube.com/watch?v=${id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="relative block rounded-lg overflow-hidden"
+        >
+          <img src={`https://img.youtube.com/vi/${id}/hqdefault.jpg`} alt="YouTube 썸네일" className="w-full object-cover" style={{ aspectRatio: "16/9" }} />
+          <span
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ background: "rgba(0,0,0,0.15)" }}
+          >
+            <span
+              className="flex items-center justify-center rounded-full"
+              style={{ width: 48, height: 48, background: "rgba(0,0,0,0.6)" }}
+            >
+              <span
+                style={{
+                  width: 0, height: 0,
+                  borderTop: "9px solid transparent",
+                  borderBottom: "9px solid transparent",
+                  borderLeft: "14px solid #fff",
+                  marginLeft: 3,
+                }}
+              />
+            </span>
+          </span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function EventDetail({ event, cpList, onEdit, onClose, canEdit }) {
   const cpObjs = (event.cps || []).map((id) => cpList.find((c) => c.id === id)).filter(Boolean);
   return (
@@ -588,7 +666,8 @@ function EventDetail({ event, cpList, onEdit, onClose, canEdit }) {
           </div>
         )}
 
-        {event.memo && <p className="text-sm mt-3 whitespace-pre-wrap" style={{ color: "#4A4A4A" }}>{event.memo}</p>}
+        {event.memo && <p className="text-sm mt-3 whitespace-pre-wrap" style={{ color: "#4A4A4A" }}><Linkify text={event.memo} /></p>}
+        {event.memo && <YouTubeThumbs text={event.memo} />}
 
         {canEdit && (
           <button onClick={onEdit} className="mt-5 w-full py-2.5 rounded-md text-sm font-medium flex items-center justify-center gap-1.5" style={{ background: "#111111", color: "#fff" }}>
