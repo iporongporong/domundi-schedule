@@ -638,12 +638,39 @@ function YouTubeThumbs({ text }) {
 
 // 제목 맨 앞 [YouTube]/[유튜브] 태그를 아이콘으로 치환
 function TitleWithIcons({ title }) {
-  const m = title.match(/^\s*\[(YouTube|유튜브)\]\s*/i);
+  const m = title.match(/^\s*\[(YouTube|유튜브|아이치이|iQIYI|iqiyi|라이브|live|LIVE)\]\s*/i);
   if (!m) return <>{title}</>;
+  const tag = m[1].toLowerCase();
+  const rest = title.slice(m[0].length);
+
+  let badge;
+  if (tag === "youtube" || tag === "유튜브") {
+    badge = <Youtube size={18} style={{ color: "#FF0000", flexShrink: 0 }} />;
+  } else if (tag === "아이치이" || tag === "iqiyi") {
+    badge = (
+      <span
+        className="inline-flex items-center justify-center rounded-md text-[10px] font-bold flex-shrink-0"
+        style={{ width: 20, height: 20, background: "#00BE06", color: "#fff" }}
+      >
+        Q
+      </span>
+    );
+  } else if (tag === "라이브" || tag === "live") {
+    badge = (
+      <span
+        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold flex-shrink-0"
+        style={{ background: "#EF4444", color: "#fff" }}
+      >
+        <span style={{ width: 5, height: 5, borderRadius: 999, background: "#fff" }} />
+        LIVE
+      </span>
+    );
+  }
+
   return (
     <span className="inline-flex items-center gap-1.5">
-      <Youtube size={18} style={{ color: "#FF0000", flexShrink: 0 }} />
-      <span>{title.slice(m[0].length)}</span>
+      {badge}
+      <span>{rest}</span>
     </span>
   );
 }
