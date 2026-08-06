@@ -1053,8 +1053,11 @@ export default function App() {
   const labelForEvent = (ev) => {
     const parts = [];
     const cpNames = (ev.cps || []).map((id) => settings.cpList.find((c) => c.id === id)?.name).filter(Boolean);
+    const cpMemberSet = new Set((ev.cps || []).flatMap((id) => CP_MEMBERS[id] || []));
+    const extraMembers = (ev.members || []).filter((m) => !cpMemberSet.has(m));
     if (cpNames.length) {
       parts.push(cpNames.join(" · "));
+      if (extraMembers.length) parts.push(extraMembers.join(", "));
     } else if (ev.members?.length) {
       parts.push(ev.members.join(", "));
     } else if (ev.gens?.length) {
@@ -1066,10 +1069,13 @@ export default function App() {
   // 제목과 별개로 CP/멤버/Gen 정보만 부제로 반환 (없으면 빈 문자열)
   const subtitleForEvent = (ev) => {
     const cpNames = (ev.cps || []).map((id) => settings.cpList.find((c) => c.id === id)?.name).filter(Boolean);
-    if (cpNames.length) return cpNames.join(" · ");
-    if (ev.members?.length) return ev.members.join(", ");
-    if (ev.gens?.length) return ev.gens.join("/");
-    return "";
+    const cpMemberSet = new Set((ev.cps || []).flatMap((id) => CP_MEMBERS[id] || []));
+    const extraMembers = (ev.members || []).filter((m) => !cpMemberSet.has(m));
+    const parts = [];
+    if (cpNames.length) parts.push(cpNames.join(" · "));
+    if (extraMembers.length) parts.push(extraMembers.join(", "));
+    if (!parts.length && ev.gens?.length) parts.push(ev.gens.join("/"));
+    return parts.join(" · ");
   };
 
   const handleSaveEvent = (ev) => {
