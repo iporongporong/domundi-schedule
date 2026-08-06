@@ -1113,11 +1113,11 @@ export default function App() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center" style={{ background: "#F1F1F1" }}>Domundi 스케줄 불러오는 중...</div>;
+    return <div className="min-h-screen flex items-center justify-center" style={{ background: "#F1F1F1", paddingTop: "env(safe-area-inset-top)" }}>Domundi 스케줄 불러오는 중...</div>;
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "#F1F1F1", fontFamily: "'Inter',sans-serif" }}>
+    <div className="min-h-screen" style={{ background: "#F1F1F1", fontFamily: "'Inter',sans-serif", paddingTop: "env(safe-area-inset-top)" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
       `}</style>
