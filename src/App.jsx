@@ -1023,8 +1023,11 @@ export default function App() {
   const eventMatchesFilter = (ev) => {
     if (filterCategory === "ALL") return true;
     if (filterCategory === "CP") {
-      if (filterValue === "__ALL__") return (ev.cps || []).length > 0;
-      return ev.cps?.includes(filterValue);
+      if (filterValue === "__ALL__") return (ev.cps || []).length > 0 || (ev.members || []).some((m) => MEMBER_TO_CP[m]);
+      if (ev.cps?.includes(filterValue)) return true;
+      // CP로 태그되진 않았어도, 그 CP 소속 멤버 중 한 명이라도 이 일정에 있으면 매칭
+      const cpMemberNames = CP_MEMBERS[filterValue] || [];
+      return (ev.members || []).some((m) => cpMemberNames.includes(m));
     }
     if (filterValue === "__ALL__") return ev.gens?.includes(filterCategory);
     return ev.members?.includes(filterValue);
@@ -1246,9 +1249,13 @@ export default function App() {
               const visibleEvents = dayEvents.filter(eventMatchesFilter);
               // 필터로 특정 CP를 골랐으면 그 CP 색을 우선 사용 (여러 CP가 걸린 일정이어도 선택한 CP 색으로 표시)
               const colorForFilterMatch = (ev) => {
-                if (filterCategory === "CP" && filterValue !== "__ALL__" && ev.cps?.includes(filterValue)) {
-                  const c = settings.cpList.find((cc) => cc.id === filterValue);
-                  if (c) return c.color;
+                if (filterCategory === "CP" && filterValue !== "__ALL__") {
+                  if (ev.cps?.includes(filterValue)) {
+                    const c = settings.cpList.find((cc) => cc.id === filterValue);
+                    if (c) return c.color;
+                  }
+                  // 정식 CP 태그는 없고 멤버 한 명만 매칭된 경우 → 회색 유지
+                  return "#A8A296";
                 }
                 if (filterCategory !== "CP" && filterValue !== "__ALL__") {
                   // 특정 멤버 선택: 그 멤버가 속한 CP가 이 일정에 걸려있으면 그 CP 색을 사용
