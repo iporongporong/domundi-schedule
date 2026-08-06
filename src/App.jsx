@@ -1258,12 +1258,13 @@ export default function App() {
                   return "#A8A296";
                 }
                 if (filterCategory !== "CP" && filterValue !== "__ALL__") {
-                  // 특정 멤버 선택: 그 멤버가 속한 CP가 이 일정에 걸려있으면 그 CP 색을 사용
+                  // 특정 멤버 선택: 그 멤버가 속한 CP가 이 일정에 걸려있으면 그 CP 색을, 아니면(다른 CP의 부속 멤버로만 낀 경우 등) 회색
                   const memberCpId = MEMBER_TO_CP[filterValue];
                   if (memberCpId && ev.cps?.includes(memberCpId)) {
                     const c = settings.cpList.find((cc) => cc.id === memberCpId);
                     if (c) return c.color;
                   }
+                  return "#A8A296";
                 }
                 return colorForEvent(ev);
               };
