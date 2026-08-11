@@ -658,10 +658,9 @@ function TitleWithIcons({ title }) {
   } else if (tag === "라이브" || tag === "live") {
     badge = (
       <span
-        className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-bold flex-shrink-0"
-        style={{ background: "#EF4444", color: "#fff" }}
+        className="inline-flex items-center justify-center rounded-md font-bold flex-shrink-0"
+        style={{ width: 20, height: 20, background: "#EF4444", color: "#fff", fontSize: 7, letterSpacing: "-0.3px" }}
       >
-        <span style={{ width: 5, height: 5, borderRadius: 999, background: "#fff" }} />
         LIVE
       </span>
     );
