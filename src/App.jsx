@@ -352,10 +352,14 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
   const nameOptionsForCategory = (cat) => {
     if (cat === "CP")
       return [...cpList].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ value: c.id, label: c.name }));
-    return Object.keys(MEMBER_GEN_MAP)
-      .filter((m) => MEMBER_GEN_MAP[m] === cat)
-      .sort((a, b) => a.localeCompare(b))
-      .map((m) => ({ value: m, label: m }));
+    if (cat === "ALL_MEMBERS") return [{ value: "__ALL_MEMBERS__", label: "전체 멤버 (46명)" }];
+    return [
+      { value: "__ALL__", label: `GEN${cat.slice(1)} 전체 선택` },
+      ...Object.keys(MEMBER_GEN_MAP)
+        .filter((m) => MEMBER_GEN_MAP[m] === cat)
+        .sort((a, b) => a.localeCompare(b))
+        .map((m) => ({ value: m, label: m })),
+    ];
   };
   const [pickCategory, setPickCategory] = useState("CP");
   const [pickValue, setPickValue] = useState(() => nameOptionsForCategory("CP")[0]?.value || "");
@@ -368,6 +372,13 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
       setMembers((prev) => Array.from(new Set([...prev, ...cpMembers])));
       const cpGens = cpMembers.map((m) => MEMBER_GEN_MAP[m]).filter(Boolean);
       setGens((prev) => Array.from(new Set([...prev, ...cpGens])));
+    } else if (pickCategory === "ALL_MEMBERS") {
+      setMembers(Object.keys(MEMBER_GEN_MAP));
+      setGens([...GEN_KEYS]);
+    } else if (pickValue === "__ALL__") {
+      const genMembers = Object.keys(MEMBER_GEN_MAP).filter((m) => MEMBER_GEN_MAP[m] === pickCategory);
+      setMembers((prev) => Array.from(new Set([...prev, ...genMembers])));
+      setGens((prev) => (prev.includes(pickCategory) ? prev : [...prev, pickCategory]));
     } else {
       if (!members.includes(pickValue)) setMembers((prev) => [...prev, pickValue]);
       setGens((prev) => (prev.includes(pickCategory) ? prev : [...prev, pickCategory]));
@@ -483,6 +494,7 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
           }}
         >
           <option value="CP">CP</option>
+          <option value="ALL_MEMBERS">전체멤버</option>
           {GEN_KEYS.map((g) => (
             <option key={g} value={g}>GEN{g.slice(1)}</option>
           ))}
