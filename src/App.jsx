@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, X, Plus, Settings as SettingsIcon, Trash2, Pencil, Image as ImageIcon, Users, CalendarDays, Check, Cake, ExternalLink, Star, Youtube } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Plus, Settings as SettingsIcon, Trash2, Pencil, Image as ImageIcon, Users, CalendarDays, Check, Cake, ExternalLink, Star, Youtube, Lock, Unlock } from "lucide-react";
 import { dbGet, dbSet } from "./firebase.js";
 
 // ---------- helpers ----------
@@ -22,7 +22,7 @@ const MEMBER_GEN_MAP = {
   Tle: "G3", Keng: "G3", Firstone: "G3", Latte: "G3", Namping: "G3", Thomas: "G3", Kong: "G3", Gems: "G3", Teetee: "G3",
   Kim: "G4", JJ: "G4", Ohm: "G4", Auau: "G4", Por: "G4", Save: "G4", Ryujin: "G4", Patji: "G4",
   Porsche: "G5", Phupha: "G5", Copper: "G5", Pung: "G5", Otto: "G5", North: "G5", Fifa: "G5", Wave: "G5", Pete: "G5",
-  Ton: "G6", Few: "G6", Thee: "G6", Teddy: "G6", Reeonn: "G6", Nan: "G6", Nick: "G6",
+  Ton: "G6", Few: "G6", Thee: "G6", Teddy: "G6", Reeonn: "G6", Nan: "G6", Nick: "G6", JT: "G6",
 };
 const defaultMemberList = () => Object.keys(MEMBER_GEN_MAP);
 
@@ -111,12 +111,14 @@ const DEFAULT_SCHEDULES = [
 const CP_NAMES = [
   "MaxNat", "ZeeNunew", "TutorYim", "KengNamping", "ThomasKong", "TleFirstone", "NetJJ",
   "LatteKim", "TeeteePor", "AuauSave", "RyujinPatji", "CopperFifa", "NorthOtto",
+  "JTOhm", "TheeWave",
 ];
 
 // 지정된 파스텔 팔레트 (순서: MaxNat → NorthOtto) — 원본 이미지에서 픽셀 추출
 const CP_COLORS = [
   "#F7A4B8", "#F38A83", "#EE544D", "#F57E43", "#F9BE51", "#FDD443", "#9EC793",
   "#3B9D6A", "#0C77AF", "#16A6CA", "#8FA5D0", "#6D6685", "#C8B0E8",
+  "#2FA9A1", "#B85C9E",
 ];
 
 const defaultCPList = () =>
@@ -131,7 +133,7 @@ const CP_MEMBERS = {
   cp1: ["Max", "Nat"], cp2: ["Zee", "Nunew"], cp3: ["Tutor", "Yim"], cp4: ["Keng", "Namping"],
   cp5: ["Thomas", "Kong"], cp6: ["Tle", "Firstone"], cp7: ["Net", "JJ"], cp8: ["Latte", "Kim"],
   cp9: ["Teetee", "Por"], cp10: ["Auau", "Save"], cp11: ["Ryujin", "Patji"], cp12: ["Copper", "Fifa"],
-  cp13: ["North", "Otto"],
+  cp13: ["North", "Otto"], cp14: ["JT", "Ohm"], cp15: ["Thee", "Wave"],
 };
 
 // 멤버명 -> 소속 CP id 역매핑 (Gen/멤버 필터 시 해당 멤버의 CP 색을 찾는 데 사용)
@@ -917,14 +919,14 @@ function PinModal({ mode, onSubmit, onClose, error }) {
     <div className="p-5" style={{ fontFamily: "'Inter',sans-serif" }}>
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-semibold" style={{ fontFamily: "'Inter',sans-serif" }}>
-          {mode === "setup" ? "관리자 PIN 설정" : "PIN 입력"}
+          {mode === "setup" ? "관리자 PIN 설정하기" : "관리자만 편집할 수 있어요"}
         </h2>
         <button onClick={onClose}><X size={20} /></button>
       </div>
       <p className="text-sm mb-3" style={{ color: "#8E8E93" }}>
         {mode === "setup"
-          ? "이 캘린더는 공유되지만, 등록·수정·설정 변경은 PIN을 아는 사람만 할 수 있어요. 처음이니 PIN을 하나 정해주세요."
-          : "편집하려면 관리자 PIN을 입력하세요. 보기만 하려면 그냥 닫으셔도 됩니다."}
+          ? "일정 등록·수정은 PIN을 아는 관리자만 할 수 있어요. 사용할 PIN을 정해주세요."
+          : "일정을 등록·수정하려면 관리자 PIN이 필요해요."}
       </p>
       <input
         type="password"
@@ -934,7 +936,7 @@ function PinModal({ mode, onSubmit, onClose, error }) {
         value={pin}
         onChange={(e) => setPin(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter" && pin) onSubmit(pin); }}
-        placeholder="PIN"
+        placeholder="PIN 입력"
         autoFocus
       />
       {error && <p className="text-xs mt-1.5" style={{ color: "#B5495B" }}>{error}</p>}
@@ -943,7 +945,7 @@ function PinModal({ mode, onSubmit, onClose, error }) {
         className="mt-4 w-full py-2.5 rounded-md text-sm font-medium"
         style={{ background: "#111111", color: "#fff" }}
       >
-        {mode === "setup" ? "설정하기" : "확인"}
+        {mode === "setup" ? "이 PIN으로 설정할게요" : "편집 모드로 들어가기"}
       </button>
     </div>
   );
@@ -1140,7 +1142,7 @@ export default function App() {
             <CalendarDays size={20} style={{ color: "#111111" }} />
             <h1 className="text-xl font-bold" style={{ color: "#111111" }}>Domundi 스케줄</h1>
           </div>
-          <button onClick={handleGearClick} style={{ color: unlocked ? "#111111" : "#8E8E93" }}><SettingsIcon size={20} /></button>
+          <button onClick={handleGearClick} style={{ color: unlocked ? "#111111" : "#8E8E93" }}>{unlocked ? <Unlock size={20} /> : <Lock size={20} />}</button>
         </div>
 
         {/* Blog link - black accent (user's preferred choice) */}
