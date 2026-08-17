@@ -309,6 +309,7 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
   const [date, setDate] = useState(initial?.date || todayKey);
   const [time, setTime] = useState(initial?.time || "");
   const [allDay, setAllDay] = useState(initial?.allDay || false);
+  const [tbc, setTbc] = useState(Boolean(initial && !initial.allDay && !initial.time));
   const [cps, setCps] = useState(initial?.cps || (initial?.cp ? [initial.cp] : []));
   const [gens, setGens] = useState(initial?.gens || []);
   const [members, setMembers] = useState(initial?.members || []);
@@ -459,25 +460,38 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
           <input
             type="time"
             className={input}
-            style={{ borderColor: "#E5E5EA", opacity: allDay ? 0.4 : 1 }}
+            style={{ borderColor: "#E5E5EA", opacity: allDay || tbc ? 0.4 : 1 }}
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            disabled={allDay}
+            disabled={allDay || tbc}
           />
         </div>
       </div>
 
-      <label className="flex items-center gap-2 mt-2 text-sm" style={{ color: "#111111" }}>
-        <input
-          type="checkbox"
-          checked={allDay}
-          onChange={(e) => {
-            setAllDay(e.target.checked);
-            if (e.target.checked) setTime("");
-          }}
-        />
-        종일
-      </label>
+      <div className="flex gap-4 mt-2">
+        <label className="flex items-center gap-2 text-sm" style={{ color: "#111111" }}>
+          <input
+            type="checkbox"
+            checked={allDay}
+            onChange={(e) => {
+              setAllDay(e.target.checked);
+              if (e.target.checked) { setTime(""); setTbc(false); }
+            }}
+          />
+          종일
+        </label>
+        <label className="flex items-center gap-2 text-sm" style={{ color: "#111111" }}>
+          <input
+            type="checkbox"
+            checked={tbc}
+            onChange={(e) => {
+              setTbc(e.target.checked);
+              if (e.target.checked) { setTime(""); setAllDay(false); }
+            }}
+          />
+          시간 미확정 (TBC)
+        </label>
+      </div>
 
       <label className={`${label} mt-3`} style={{ color: "#8E8E93" }}>국가 (기본값: 태국)</label>
       <input className={input} style={{ borderColor: "#E5E5EA" }} value={country} onChange={(e) => setCountry(e.target.value)} placeholder="태국" />
