@@ -774,6 +774,11 @@ function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
   };
 
   const updateCP = (id, field, value) => setCpList((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
+  const addCP = () => {
+    const nextNum = cpList.length + 1;
+    setCpList((prev) => [...prev, { id: `cp${nextNum}`, name: `CP ${nextNum}`, color: "#CCCCCC" }]);
+  };
+  const removeCP = (id) => setCpList((prev) => prev.filter((c) => c.id !== id));
   const addMember = () => {
     const n = newMember.trim();
     if (n && !memberList.includes(n)) setMemberList([...memberList, n]);
@@ -787,8 +792,8 @@ function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
         <button onClick={onClose}><X size={20} /></button>
       </div>
 
-      <h3 className="text-sm font-semibold mb-2">CP 라벨 &amp; 색상 (13팀)</h3>
-      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 mb-4">
+      <h3 className="text-sm font-semibold mb-2">CP 라벨 &amp; 색상 ({cpList.length}팀)</h3>
+      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1 mb-2">
         {cpList.map((c) => (
           <div key={c.id} className="flex items-center gap-2">
             <input type="color" value={c.color} onChange={(e) => updateCP(c.id, "color", e.target.value)} className="w-8 h-8 rounded border-0 cursor-pointer flex-shrink-0" />
@@ -811,9 +816,19 @@ function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
               value={c.name}
               onChange={(e) => updateCP(c.id, "name", e.target.value)}
             />
+            <button type="button" onClick={() => removeCP(c.id)} className="flex-shrink-0" style={{ color: "#B5495B" }}>
+              <X size={16} />
+            </button>
           </div>
         ))}
       </div>
+      <button
+        onClick={addCP}
+        className="w-full py-2 rounded-md text-sm font-medium mb-4"
+        style={{ background: "#F0F0F2", color: "#111111" }}
+      >
+        + 새 CP 추가
+      </button>
 
       <h3 className="text-sm font-semibold mb-2">Gen 색상 (고정, 1~6)</h3>
       <div className="flex gap-1.5 mb-4">
