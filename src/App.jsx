@@ -431,7 +431,7 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
       members,
       memo,
       imageUrl: imageUrl.trim(),
-      country: country.trim() || "태국",
+      country: country.trim(),
     });
   };
 
