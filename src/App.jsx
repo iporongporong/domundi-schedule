@@ -316,7 +316,7 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
   const [memberInput, setMemberInput] = useState("");
   const [memo, setMemo] = useState(initial?.memo || "");
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl || "");
-  const [country, setCountry] = useState(initial?.country || "태국");
+  const [country, setCountry] = useState(initial?.id ? (initial.country ?? "") : "태국");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
