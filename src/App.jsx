@@ -111,14 +111,14 @@ const DEFAULT_SCHEDULES = [
 const CP_NAMES = [
   "MaxNat", "ZeeNunew", "TutorYim", "KengNamping", "ThomasKong", "TleFirstone", "NetJJ",
   "LatteKim", "TeeteePor", "AuauSave", "RyujinPatji", "CopperFifa", "NorthOtto",
-  "JTOhm", "TheeWave",
+  "JTOhm", "TheeWave", "FewGems",
 ];
 
 // 지정된 파스텔 팔레트 (순서: MaxNat → NorthOtto) — 원본 이미지에서 픽셀 추출
 const CP_COLORS = [
   "#F7A4B8", "#F38A83", "#EE544D", "#F57E43", "#F9BE51", "#FDD443", "#9EC793",
   "#3B9D6A", "#0C77AF", "#16A6CA", "#8FA5D0", "#6D6685", "#C8B0E8",
-  "#2FA9A1", "#B85C9E",
+  "#2FA9A1", "#B85C9E", "#D98C3D",
 ];
 
 const defaultCPList = () =>
@@ -133,7 +133,7 @@ const CP_MEMBERS = {
   cp1: ["Max", "Nat"], cp2: ["Zee", "Nunew"], cp3: ["Tutor", "Yim"], cp4: ["Keng", "Namping"],
   cp5: ["Thomas", "Kong"], cp6: ["Tle", "Firstone"], cp7: ["Net", "JJ"], cp8: ["Latte", "Kim"],
   cp9: ["Teetee", "Por"], cp10: ["Auau", "Save"], cp11: ["Ryujin", "Patji"], cp12: ["Copper", "Fifa"],
-  cp13: ["North", "Otto"], cp14: ["JT", "Ohm"], cp15: ["Thee", "Wave"],
+  cp13: ["North", "Otto"], cp14: ["JT", "Ohm"], cp15: ["Thee", "Wave"], cp16: ["Few", "Gems"],
 };
 
 // 멤버명 -> 소속 CP id 역매핑 (Gen/멤버 필터 시 해당 멤버의 CP 색을 찾는 데 사용)
