@@ -1317,6 +1317,8 @@ export default function App() {
                 return colorForEvent(ev);
               };
               const dayColors = Array.from(new Set(visibleEvents.map(colorForFilterMatch)));
+              // 같은 날짜에 회색(단순 멤버 매칭)이랑 실제 CP 색이 섞여 있으면, 실제 CP 색을 우선 사용
+              const dayFillColor = dayColors.find((c) => c !== "#A8A296") || dayColors[0];
               const isSpecificFilter = filterCategory !== "ALL" && filterValue !== "__ALL__";
               const monthDay = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
               const birthdayNames = Object.entries(settings.birthdays || {})
@@ -1331,7 +1333,7 @@ export default function App() {
                   style={{
                     background:
                       isSpecificFilter && visibleEvents.length > 0
-                        ? dayColors[0]
+                        ? dayFillColor
                         : filterCategory === "ALL" && birthdayNames.length > 0
                         ? "#9DA9EBCC"
                         : "#F8F8F8",
