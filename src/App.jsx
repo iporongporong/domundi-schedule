@@ -758,6 +758,7 @@ function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
   const [copiedId, setCopiedId] = useState(null);
   const [importText, setImportText] = useState("");
   const [importMsg, setImportMsg] = useState("");
+  const [pendingImport, setPendingImport] = useState(null);
 
   const handleImport = () => {
     try {
@@ -766,8 +767,8 @@ function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
         setImportMsg("JSON 배열 형식이어야 해요.");
         return;
       }
-      onImportSchedules(parsed);
-      setImportMsg(`${parsed.length}개 일정을 추가했어요.`);
+      setPendingImport(parsed);
+      setImportMsg(`${parsed.length}개 일정 확인됨 — 아래 "저장" 버튼을 눌러야 실제로 반영돼요.`);
       setImportText("");
     } catch (e) {
       setImportMsg("JSON 형식이 올바르지 않아요. 붙여넣은 내용을 다시 확인해주세요.");
@@ -930,7 +931,10 @@ function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
       </button>
 
       <button
-        onClick={() => onSave({ cpList, memberList, cloudName: cloudName.trim(), uploadPreset: uploadPreset.trim(), birthdays })}
+        onClick={() => {
+          if (pendingImport) onImportSchedules(pendingImport);
+          onSave({ cpList, memberList, cloudName: cloudName.trim(), uploadPreset: uploadPreset.trim(), birthdays });
+        }}
         className="w-full py-2.5 rounded-md text-sm font-medium"
         style={{ background: "#111111", color: "#fff" }}
       >
