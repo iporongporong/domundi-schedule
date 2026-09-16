@@ -1075,7 +1075,11 @@ export default function App() {
       const cpMemberNames = CP_MEMBERS[filterValue] || [];
       return (ev.members || []).some((m) => cpMemberNames.includes(m));
     }
-    if (filterValue === "__ALL__") return ev.gens?.includes(filterCategory);
+    if (filterValue === "__ALL__") {
+      // ev.gens에 정식으로 태그돼 있지 않아도, 실제 멤버 목록을 현재 Gen 매핑 기준으로 다시 확인해서 매칭
+      if (ev.gens?.includes(filterCategory)) return true;
+      return (ev.members || []).some((m) => MEMBER_GEN_MAP[m] === filterCategory);
+    }
     return ev.members?.includes(filterValue);
   };
 
