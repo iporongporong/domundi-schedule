@@ -1187,6 +1187,14 @@ export default function App() {
           href="https://blog.naver.com/boyslog"
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => {
+            if (typeof window.gtag === "function") {
+              window.gtag("event", "blog_banner_click", {
+                event_category: "engagement",
+                event_label: "DMD Late Check-In 블로그 바로가기",
+              });
+            }
+          }}
           className="rounded-2xl px-4 py-2.5 flex items-center justify-between"
           style={{ background: "#111111", textDecoration: "none" }}
         >
