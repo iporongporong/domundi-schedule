@@ -1391,7 +1391,7 @@ export default function App() {
               );
             })}
           </div>
-          <p className="text-xs mt-2 px-0.5" style={{ color: "#8E8E93" }}>* 스케줄 시간은 한국시간(KST) 기준입니다</p>
+          <p className="text-xs" style={{ color: "#8E8E93", padding: 2, margin: "10px 0" }}>* 스케줄 시간은 한국시간(KST) 기준입니다</p>
         </div>
 
         {/* Notice / disclaimer widget - collapsed by default, low visual weight */}
