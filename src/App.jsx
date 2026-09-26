@@ -1196,7 +1196,7 @@ export default function App() {
               });
             }
           }}
-          className="rounded-2xl px-4 py-2.5 flex items-center justify-between"
+          className="rounded-[20px] px-4 py-2.5 flex items-center justify-between"
           style={{ background: "#111111", textDecoration: "none" }}
         >
           <span className="text-sm font-medium" style={{ color: "#fff" }}>DMD Late Check-In 블로그 바로가기</span>
