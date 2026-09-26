@@ -1414,7 +1414,7 @@ export default function App() {
             className="overflow-hidden"
             style={{ maxHeight: noticeOpen ? 600 : 0, transition: "max-height 0.25s ease, padding 0.25s ease", padding: noticeOpen ? "0 16px 14px" : "0 16px" }}
           >
-            <ol className="flex flex-col gap-1.5" style={{ paddingLeft: 17, margin: 0 }}>
+            <ol className="flex flex-col gap-1.5" style={{ paddingLeft: 17, margin: 0, listStyleType: "decimal", listStylePosition: "outside" }}>
               <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>본 캘린더는 개인적으로 제작·운영하는 비공식 스케줄 정리 페이지이며, DOMUNDI 및 소속 아티스트와는 무관합니다.</li>
               <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>모든 일정은 공식 SNS 및 공식 발표를 바탕으로 정리하고 있으나, 현지 사정에 따라 일정·시간·장소가 변경되거나 취소될 수 있습니다. 중요한 예매나 이벤트 참여 전에는 공식 채널의 공지를 꼭 확인해 주세요. 본 페이지 정보 활용에 따른 불이익은 책임지지 않습니다.</li>
               <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>모든 일정은 한국시간(KST) 기준으로 표기되며, 시간이 확정되지 않은 일정은 'TBC'로 표시됩니다.</li>
