@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, X, Plus, Settings as SettingsIcon, Trash2, Pencil, Image as ImageIcon, Users, CalendarDays, Check, Cake, ExternalLink, Star, Youtube, Lock, Unlock } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, X, Plus, Settings as SettingsIcon, Trash2, Pencil, Image as ImageIcon, Users, CalendarDays, Check, Cake, ExternalLink, Star, Youtube, Lock, Unlock, Info } from "lucide-react";
 import { dbGet, dbSet } from "./firebase.js";
 
 // ---------- helpers ----------
@@ -999,6 +999,7 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(false);
   const [pinModal, setPinModal] = useState(null); // null | "setup" | "unlock"
   const [pinError, setPinError] = useState("");
+  const [noticeOpen, setNoticeOpen] = useState(false);
 
   useEffect(() => {
     loadStorage().then(({ schedules, settings, unlocked }) => {
@@ -1391,6 +1392,41 @@ export default function App() {
             })}
           </div>
           <p className="text-xs mt-2 px-0.5" style={{ color: "#8E8E93" }}>* 스케줄 시간은 한국시간(KST) 기준입니다</p>
+        </div>
+
+        {/* Notice / disclaimer widget - collapsed by default, low visual weight */}
+        <div className="rounded-[20px] overflow-hidden" style={{ background: "#fff" }}>
+          <button
+            onClick={() => setNoticeOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3"
+            style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'Inter',sans-serif", textAlign: "left" }}
+          >
+            <span className="flex items-center gap-1.5">
+              <Info size={14} style={{ color: "#A8A8AC", flexShrink: 0 }} />
+              <span className="text-sm font-medium" style={{ color: "#4A4A4A" }}>유의사항 안내</span>
+            </span>
+            <ChevronDown
+              size={14}
+              style={{ color: "#A8A8AC", flexShrink: 0, transition: "transform 0.2s ease", transform: noticeOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+            />
+          </button>
+          <div
+            className="overflow-hidden"
+            style={{ maxHeight: noticeOpen ? 600 : 0, transition: "max-height 0.25s ease, padding 0.25s ease", padding: noticeOpen ? "0 16px 14px" : "0 16px" }}
+          >
+            <ol className="flex flex-col gap-1.5" style={{ paddingLeft: 17, margin: 0 }}>
+              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>본 캘린더는 개인적으로 제작·운영하는 비공식 스케줄 정리 페이지이며, DOMUNDI 및 소속 아티스트와는 무관합니다.</li>
+              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>모든 일정은 공식 SNS 및 공식 발표를 바탕으로 정리하고 있으나, 현지 사정에 따라 일정·시간·장소가 변경되거나 취소될 수 있습니다. 중요한 예매나 이벤트 참여 전에는 공식 채널의 공지를 꼭 확인해 주세요. 본 페이지 정보 활용에 따른 불이익은 책임지지 않습니다.</li>
+              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>모든 일정은 한국시간(KST) 기준으로 표기되며, 시간이 확정되지 않은 일정은 'TBC'로 표시됩니다.</li>
+              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>본 페이지에 정리된 일정 데이터, 구성, 디자인 등 모든 콘텐츠의 무단 복사, 캡처 후 재배포, 2차 가공 및 상업적 이용을 금지합니다. 공유를 원하실 경우 페이지 링크로 공유해 주세요.</li>
+              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>서비스 개선을 위해 익명화된 방문 통계(Google Analytics)를 수집하고 있으며, 개인을 식별할 수 있는 정보는 수집하지 않습니다.</li>
+              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>
+                일정 오류 제보나 문의는{" "}
+                <a href="https://blog.naver.com/boyslog" target="_blank" rel="noopener noreferrer" style={{ color: "#8C97C4", textDecoration: "underline" }}>블로그</a>
+                를 통해 남겨 주세요.
+              </li>
+            </ol>
+          </div>
         </div>
       </div>
 
