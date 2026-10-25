@@ -144,6 +144,28 @@ const MEMBER_TO_CP = Object.fromEntries(
   Object.entries(CP_MEMBERS).flatMap(([cpId, names]) => names.map((n) => [n, cpId]))
 );
 
+// CP만 태그된 일정에 그 CP의 멤버/Gen을 채워 넣는다 (기존 값은 유지, 추가만 함)
+function fillMembersFromCps(list) {
+  let changed = 0;
+  const next = list.map((ev) => {
+    const cps = ev.cps && ev.cps.length ? ev.cps : ev.cp ? [ev.cp] : [];
+    if (!cps.length) return ev;
+    const members = [...(ev.members || [])];
+    const gens = [...(ev.gens || [])];
+    cps.forEach((id) => {
+      (CP_MEMBERS[id] || []).forEach((m) => {
+        if (!members.includes(m)) members.push(m);
+        const g = MEMBER_GEN_MAP[m];
+        if (g && !gens.includes(g)) gens.push(g);
+      });
+    });
+    if (members.length === (ev.members || []).length && gens.length === (ev.gens || []).length) return ev;
+    changed += 1;
+    return { ...ev, members, gens };
+  });
+  return { next, changed };
+}
+
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -378,7 +400,18 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
       setGens((prev) => (prev.includes(pickCategory) ? prev : [...prev, pickCategory]));
     }
   };
-  const removeCp = (id) => setCps((prev) => prev.filter((c) => c !== id));
+  // CP를 지우면 그 CP에만 속한 멤버와, 더는 멤버가 남지 않는 Gen도 함께 정리
+  const removeCp = (id) => {
+    const remainingCps = cps.filter((c) => c !== id);
+    const keepMembers = new Set(remainingCps.flatMap((c) => CP_MEMBERS[c] || []));
+    const dropMembers = (CP_MEMBERS[id] || []).filter((m) => !keepMembers.has(m));
+    const nextMembers = members.filter((m) => !dropMembers.includes(m));
+    const dropGens = dropMembers.map((m) => MEMBER_GEN_MAP[m]).filter(Boolean);
+    const nextGens = gens.filter((g) => !dropGens.includes(g) || nextMembers.some((m) => MEMBER_GEN_MAP[m] === g));
+    setCps(remainingCps);
+    setMembers(nextMembers);
+    setGens(nextGens);
+  };
 
   const addMember = (name) => {
     const n = name.trim();
@@ -388,7 +421,13 @@ function EventForm({ initial, cpList, memberList, cloudName, uploadPreset, onSav
     if (autoGen) setGens((prev) => (prev.includes(autoGen) ? prev : [...prev, autoGen]));
     setMemberInput("");
   };
-  const removeMember = (n) => setMembers(members.filter((m) => m !== n));
+  // 멤버를 지울 때 그 Gen에 다른 멤버가 없으면 Gen 태그도 함께 정리
+  const removeMember = (n) => {
+    const nextMembers = members.filter((m) => m !== n);
+    const g = MEMBER_GEN_MAP[n];
+    setMembers(nextMembers);
+    if (g && !nextMembers.some((m) => MEMBER_GEN_MAP[m] === g)) setGens((prev) => prev.filter((x) => x !== g));
+  };
 
   const fallbackTitle = () => {
     const parts = [];
@@ -737,7 +776,7 @@ function EventDetail({ event, cpList, onEdit, onClose, canEdit }) {
 }
 
 // ---------- Settings ----------
-function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
+function SettingsModal({ settings, schedules, onSave, onClose, onImportSchedules, onBulkFill }) {
   const [cpList, setCpList] = useState(settings.cpList.map((c) => ({ ...c })));
   const [memberList, setMemberList] = useState([...settings.memberList]);
   const [newMember, setNewMember] = useState("");
@@ -750,6 +789,9 @@ function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
   const [importText, setImportText] = useState("");
   const [importMsg, setImportMsg] = useState("");
   const [pendingImport, setPendingImport] = useState(null);
+  const [bulkConfirm, setBulkConfirm] = useState(false);
+  const [bulkMsg, setBulkMsg] = useState("");
+  const bulkCount = fillMembersFromCps(schedules || []).changed;
 
   const handleImport = () => {
     try {
@@ -919,6 +961,27 @@ function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
         style={{ background: "#F0F0F2", color: "#111111" }}
       >
         가져오기
+      </button>
+
+      <h3 className="text-sm font-semibold mb-2">CP 멤버 일괄 채우기</h3>
+      <p className="text-xs mb-2" style={{ color: "#8E8E93" }}>
+        CP만 태그된 일정에 그 CP의 멤버와 Gen을 자동으로 추가해요. 기존 데이터는 지우지 않고 빠진 것만 추가해요.
+      </p>
+      <p className="text-xs mb-2" style={{ color: "#111111" }}>
+        {bulkMsg || (bulkCount > 0 ? `대상 일정 ${bulkCount}개` : "추가할 멤버가 없어요. 이미 모두 채워져 있어요.")}
+      </p>
+      <button
+        disabled={bulkCount === 0}
+        onClick={() => {
+          if (!bulkConfirm) { setBulkConfirm(true); setBulkMsg(""); return; }
+          const n = onBulkFill();
+          setBulkConfirm(false);
+          setBulkMsg(`${n}개 일정에 반영했어요.`);
+        }}
+        className="w-full py-2 rounded-md text-sm font-medium mb-5"
+        style={{ background: bulkConfirm ? "#111111" : "#F0F0F2", color: bulkConfirm ? "#fff" : "#111111", opacity: bulkCount === 0 ? 0.4 : 1 }}
+      >
+        {bulkConfirm ? `${bulkCount}개 일정에 적용할까요? 한 번 더 누르면 저장돼요` : "일괄 채우기"}
       </button>
 
       <button
@@ -1129,6 +1192,11 @@ export default function App() {
     persistSchedules(schedules.filter((s) => s.id !== id));
     setEditingEvent(undefined);
     setDetailEvent(null);
+  };
+  const handleBulkFill = () => {
+    const { next, changed } = fillMembersFromCps(schedules);
+    if (changed > 0) persistSchedules(next);
+    return changed;
   };
   const handleImportSchedules = (newEvents) => {
     const existingIds = new Set(schedules.map((s) => s.id));
@@ -1511,6 +1579,8 @@ export default function App() {
         <Modal onClose={() => setShowSettings(false)}>
           <SettingsModal
             settings={settings}
+            schedules={schedules}
+            onBulkFill={handleBulkFill}
             onSave={(next) => { persistSettings({ ...settings, ...next }); setShowSettings(false); }}
             onClose={() => setShowSettings(false)}
             onImportSchedules={handleImportSchedules}
