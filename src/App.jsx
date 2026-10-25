@@ -1009,7 +1009,7 @@ function SettingsModal({ settings, schedules, onSave, onClose, onImportSchedules
 
       <h3 className="text-sm font-semibold mb-2">일정 가져오기 (JSON)</h3>
       <p className="text-xs mb-2" style={{ color: "#8E8E93" }}>
-        Claude가 만들어준 일정 데이터(JSON 배열)를 아래에 붙여넣고 "가져오기"를 누르면 현재 일정 목록에 추가돼요.
+        일정 데이터(JSON 배열)를 아래에 붙여넣고 "가져오기"를 누르면 현재 일정 목록에 추가돼요.
       </p>
       <textarea
         className="w-full border rounded-md px-2 py-1.5 text-xs font-mono mb-2"
@@ -1553,7 +1553,7 @@ export default function App() {
               );
             })}
           </div>
-          <p className="text-xs" style={{ color: "#8E8E93", padding: 2, margin: "10px 0" }}>* 스케줄 시간은 한국시간(KST) 기준입니다</p>
+          <p className="text-[13px]" style={{ color: "#8E8E93", padding: 2, margin: "10px 0" }}>* 스케줄 시간은 한국시간(KST) 기준입니다</p>
         </div>
 
         {/* Notice / disclaimer widget - collapsed by default, low visual weight */}
