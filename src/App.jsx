@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, ChevronRight, ChevronDown, X, Plus, Settings as SettingsIcon, Trash2, Pencil, Image as ImageIcon, Users, CalendarDays, Check, Cake, ExternalLink, Star, Youtube, Lock, Unlock, Info } from "lucide-react";
-import { dbGet, dbSet } from "./firebase.js";
+import { ChevronLeft, ChevronRight, ChevronDown, X, Plus, Settings as SettingsIcon, Trash2, Pencil, Image as ImageIcon, Users, CalendarDays, Check, Cake, ExternalLink, Star, Youtube, LogOut, Info } from "lucide-react";
+import { dbGet, dbSet, authLogin, authLogout, onAuthChange } from "./firebase.js";
+
+// 관리자 전용 주소(/admin)로 접속했는지 여부
+const IS_ADMIN_PATH = typeof window !== "undefined" && window.location.pathname.replace(/\/+$/, "").startsWith("/admin");
 
 // ---------- helpers ----------
 const hslToHex = (h, s, l) => {
@@ -165,11 +168,10 @@ function buildMonthGrid(year, month) {
 
 // ---------- storage ----------
 // schedules & settings live in Firebase Realtime Database (shared, everyone sees them).
-// editor-unlock is PERSONAL (kept in this browser's localStorage).
+// editing requires Firebase email login on the /admin page.
 async function loadStorage() {
   let schedules = null;
-  let settings = { cpList: defaultCPList(), memberList: defaultMemberList(), pin: "", cloudName: "", uploadPreset: "", birthdays: DEFAULT_BIRTHDAYS };
-  let unlocked = false;
+  let settings = { cpList: defaultCPList(), memberList: defaultMemberList(), cloudName: "", uploadPreset: "", birthdays: DEFAULT_BIRTHDAYS };
   try {
     const s = await dbGet("schedules");
     if (s) schedules = s;
@@ -183,12 +185,8 @@ async function loadStorage() {
   } catch (e) {
     // key not found yet, fine
   }
-  try {
-    unlocked = localStorage.getItem("domundi-editor-unlocked") === "true";
-  } catch (e) {
-    // localStorage unavailable, fine
-  }
-  return { schedules, settings, unlocked };
+  delete settings.pin; // 예전 PIN 방식의 잔여 값은 사용하지 않음
+  return { schedules, settings };
 }
 
 async function saveSchedules(schedules) {
@@ -201,13 +199,6 @@ async function saveSchedules(schedules) {
 async function saveSettings(settings) {
   try {
     await dbSet("settings", settings);
-  } catch (e) {
-    console.error("저장 실패", e);
-  }
-}
-async function saveUnlocked(value) {
-  try {
-    localStorage.setItem("domundi-editor-unlocked", value ? "true" : "false");
   } catch (e) {
     console.error("저장 실패", e);
   }
@@ -944,42 +935,45 @@ function SettingsModal({ settings, onSave, onClose, onImportSchedules }) {
   );
 }
 
-// ---------- PIN gate ----------
-function PinModal({ mode, onSubmit, onClose, error }) {
-  // mode: "setup" (no pin exists yet) | "unlock" (pin exists, need to enter it)
-  const [pin, setPin] = useState("");
+// ---------- Admin login ----------
+function AdminLogin() {
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    if (busy) return;
+    setError("");
+    setBusy(true);
+    try {
+      await authLogin();
+    } catch (e) {
+      const code = e?.code || "";
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") setError("");
+      else if (code === "auth/popup-blocked") setError("팝업이 차단됐어요. 브라우저에서 팝업을 허용해주세요.");
+      else if (code === "auth/unauthorized-domain") setError("허용되지 않은 도메인이에요. Firebase 승인된 도메인을 확인해주세요.");
+      else if (code === "auth/network-request-failed") setError("네트워크 연결을 확인해주세요.");
+      else setError("로그인에 실패했어요. 다시 시도해주세요.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <div className="p-5" style={{ fontFamily: "'Inter',sans-serif" }}>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold" style={{ fontFamily: "'Inter',sans-serif" }}>
-          {mode === "setup" ? "관리자 PIN 설정하기" : "관리자만 편집할 수 있어요"}
-        </h2>
-        <button onClick={onClose}><X size={20} /></button>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "#F1F1F1", fontFamily: "'Inter',sans-serif", paddingTop: "env(safe-area-inset-top)" }}>
+      <div className="w-full max-w-sm rounded-3xl p-6" style={{ background: "#fff" }}>
+        <h1 className="text-lg font-bold mb-1" style={{ color: "#111111" }}>관리자 로그인</h1>
+        <p className="text-sm mb-4" style={{ color: "#8E8E93" }}>일정 등록·수정을 위해 구글 계정으로 로그인해주세요.</p>
+        {error && <p className="text-xs mb-2" style={{ color: "#B5495B" }}>{error}</p>}
+        <button
+          onClick={submit}
+          disabled={busy}
+          className="w-full py-2.5 rounded-md text-sm font-medium"
+          style={{ background: "#111111", color: "#fff", opacity: busy ? 0.6 : 1 }}
+        >
+          {busy ? "로그인 중..." : "Google 계정으로 로그인"}
+        </button>
+        <a href="/" className="block text-center text-xs mt-4" style={{ color: "#8E8E93", textDecoration: "underline" }}>캘린더로 돌아가기</a>
       </div>
-      <p className="text-sm mb-3" style={{ color: "#8E8E93" }}>
-        {mode === "setup"
-          ? "일정 등록·수정은 PIN을 아는 관리자만 할 수 있어요. 사용할 PIN을 정해주세요."
-          : "일정을 등록·수정하려면 관리자 PIN이 필요해요."}
-      </p>
-      <input
-        type="password"
-        inputMode="numeric"
-        className="w-full border rounded-md px-3 py-2 text-sm"
-        style={{ borderColor: "#E5E5EA" }}
-        value={pin}
-        onChange={(e) => setPin(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter" && pin) onSubmit(pin); }}
-        placeholder="PIN 입력"
-        autoFocus
-      />
-      {error && <p className="text-xs mt-1.5" style={{ color: "#B5495B" }}>{error}</p>}
-      <button
-        onClick={() => pin && onSubmit(pin)}
-        className="mt-4 w-full py-2.5 rounded-md text-sm font-medium"
-        style={{ background: "#111111", color: "#fff" }}
-      >
-        {mode === "setup" ? "이 PIN으로 설정할게요" : "편집 모드로 들어가기"}
-      </button>
     </div>
   );
 }
@@ -996,53 +990,44 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [filterCategory, setFilterCategory] = useState("ALL"); // "ALL" | "CP" | "G1".."G6"
   const [filterValue, setFilterValue] = useState("");
-  const [unlocked, setUnlocked] = useState(false);
-  const [pinModal, setPinModal] = useState(null); // null | "setup" | "unlock"
-  const [pinError, setPinError] = useState("");
+  const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(!IS_ADMIN_PATH);
+  const unlocked = IS_ADMIN_PATH && !!user; // 편집 기능은 /admin + 로그인 상태에서만
   const [noticeOpen, setNoticeOpen] = useState(false);
 
   useEffect(() => {
-    loadStorage().then(({ schedules, settings, unlocked }) => {
+    loadStorage().then(({ schedules, settings }) => {
       setSchedules(schedules);
       setSettings(settings);
-      setUnlocked(unlocked);
       setLoading(false);
     });
   }, []);
 
-  const handleGearClick = () => {
-    setPinError("");
-    if (unlocked) { setShowSettings(true); return; }
-    setPinModal(!settings.pin ? "setup" : "unlock");
-  };
-
-  const handlePinSubmit = (pin) => {
-    if (pinModal === "setup") {
-      const nextSettings = { ...settings, pin };
-      persistSettings(nextSettings);
-      setUnlocked(true);
-      saveUnlocked(true);
-      setPinModal(null);
-      setShowSettings(true);
-    } else {
-      if (pin === settings.pin) {
-        setUnlocked(true);
-        saveUnlocked(true);
-        setPinModal(null);
-        setShowSettings(true);
-      } else {
-        setPinError("PIN이 일치하지 않습니다.");
-      }
-    }
-  };
+  useEffect(() => {
+    if (!IS_ADMIN_PATH) return undefined;
+    document.title = "관리자 | Domundi 스케줄";
+    const meta = document.createElement("meta");
+    meta.name = "robots";
+    meta.content = "noindex,nofollow";
+    document.head.appendChild(meta);
+    const unsub = onAuthChange((u) => {
+      setUser(u);
+      setAuthReady(true);
+    });
+    return () => {
+      unsub();
+      document.head.removeChild(meta);
+    };
+  }, []);
 
   const persistSchedules = useCallback((next) => {
     setSchedules(next);
     saveSchedules(next);
   }, []);
   const persistSettings = useCallback((next) => {
-    setSettings(next);
-    saveSettings(next);
+    const { pin: _unusedPin, ...clean } = next;
+    setSettings(clean);
+    saveSettings(clean);
   }, []);
 
   const year = cursor.getFullYear();
@@ -1163,8 +1148,12 @@ export default function App() {
     persistSchedules([...schedules, ...withIds]);
   };
 
-  if (loading) {
+  if (loading || !authReady) {
     return <div className="min-h-screen flex items-center justify-center" style={{ background: "#F1F1F1", paddingTop: "env(safe-area-inset-top)" }}>Domundi 스케줄 불러오는 중...</div>;
+  }
+
+  if (IS_ADMIN_PATH && !user) {
+    return <AdminLogin />;
   }
 
   return (
@@ -1180,7 +1169,13 @@ export default function App() {
             <CalendarDays size={20} style={{ color: "#111111" }} />
             <h1 className="text-xl font-bold" style={{ color: "#111111" }}>Domundi 스케줄</h1>
           </div>
-          <button onClick={handleGearClick} style={{ color: unlocked ? "#111111" : "#8E8E93" }}>{unlocked ? <Unlock size={20} /> : <Lock size={20} />}</button>
+          {unlocked && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: "#E3E5F6", color: "#4A4F7A" }}>관리자 모드</span>
+              <button onClick={() => setShowSettings(true)} title="설정" style={{ color: "#111111" }}><SettingsIcon size={20} /></button>
+              <button onClick={() => authLogout()} title="로그아웃" style={{ color: "#8E8E93" }}><LogOut size={20} /></button>
+            </div>
+          )}
         </div>
 
         {/* Blog link - black accent (user's preferred choice) */}
@@ -1373,19 +1368,18 @@ export default function App() {
                     </span>
                   </div>
                   {visibleEvents.length > 0 && (
-                    <span
-                      className="absolute bottom-1 right-1.5 text-xs font-normal"
+                    <div
+                      className="absolute left-1.5 right-1.5 bottom-0 flex items-center justify-center"
                       style={{
-                        color:
-                          isSpecificFilter
-                            ? "#fff"
-                            : birthdayNames.length > 0
-                            ? "#fff"
-                            : "#8E8E93",
+                        height: 22,
+                        fontSize: 11,
+                        fontWeight: 500,
+                        borderTop: `1px solid ${isSpecificFilter || birthdayNames.length > 0 ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.08)"}`,
+                        color: isSpecificFilter || birthdayNames.length > 0 ? "rgba(255,255,255,0.92)" : "#8E8E93",
                       }}
                     >
                       +{visibleEvents.length}
-                    </span>
+                    </div>
                   )}
                 </div>
               );
@@ -1415,12 +1409,12 @@ export default function App() {
             style={{ maxHeight: noticeOpen ? 600 : 0, transition: "max-height 0.25s ease, padding 0.25s ease", padding: noticeOpen ? "0 16px 14px" : "0 16px" }}
           >
             <ol className="flex flex-col gap-1.5" style={{ paddingLeft: 17, margin: 0, listStyleType: "decimal", listStylePosition: "outside" }}>
-              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>본 캘린더는 개인적으로 제작·운영하는 비공식 스케줄 정리 페이지이며, DOMUNDI 및 소속 아티스트와는 무관합니다.</li>
-              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>모든 일정은 공식 SNS 및 공식 발표를 바탕으로 정리하고 있으나, 현지 사정에 따라 일정·시간·장소가 변경되거나 취소될 수 있습니다. 중요한 예매나 이벤트 참여 전에는 공식 채널의 공지를 꼭 확인해 주세요. 본 페이지 정보 활용에 따른 불이익은 책임지지 않습니다.</li>
-              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>모든 일정은 한국시간(KST) 기준으로 표기되며, 시간이 확정되지 않은 일정은 'TBC'로 표시됩니다.</li>
-              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>본 페이지에 정리된 일정 데이터, 구성, 디자인 등 모든 콘텐츠의 무단 복사, 캡처 후 재배포, 2차 가공 및 상업적 이용을 금지합니다. 공유를 원하실 경우 페이지 링크로 공유해 주세요.</li>
-              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>서비스 개선을 위해 익명화된 방문 통계(Google Analytics)를 수집하고 있으며, 개인을 식별할 수 있는 정보는 수집하지 않습니다.</li>
-              <li className="text-xs" style={{ lineHeight: 1.6, color: "#808086" }}>
+              <li className="text-[13px]" style={{ lineHeight: 1.6, color: "#808086" }}>본 캘린더는 개인적으로 제작·운영하는 비공식 스케줄 정리 페이지이며, DOMUNDI 및 소속 아티스트와는 무관합니다.</li>
+              <li className="text-[13px]" style={{ lineHeight: 1.6, color: "#808086" }}>모든 일정은 공식 SNS 및 공식 발표를 바탕으로 정리하고 있으나, 현지 사정에 따라 일정·시간·장소가 변경되거나 취소될 수 있습니다. 중요한 예매나 이벤트 참여 전에는 공식 채널의 공지를 꼭 확인해 주세요. 본 페이지 정보 활용에 따른 불이익은 책임지지 않습니다.</li>
+              <li className="text-[13px]" style={{ lineHeight: 1.6, color: "#808086" }}>모든 일정은 한국시간(KST) 기준으로 표기되며, 시간이 확정되지 않은 일정은 'TBC'로 표시됩니다.</li>
+              <li className="text-[13px]" style={{ lineHeight: 1.6, color: "#808086" }}>본 페이지에 정리된 일정 데이터, 구성, 디자인 등 모든 콘텐츠의 무단 복사, 캡처 후 재배포, 2차 가공 및 상업적 이용을 금지합니다. 공유를 원하실 경우 페이지 링크로 공유해 주세요.</li>
+              <li className="text-[13px]" style={{ lineHeight: 1.6, color: "#808086" }}>서비스 개선을 위해 익명화된 방문 통계(Google Analytics)를 수집하고 있으며, 개인을 식별할 수 있는 정보는 수집하지 않습니다.</li>
+              <li className="text-[13px]" style={{ lineHeight: 1.6, color: "#808086" }}>
                 일정 오류 제보나 문의는{" "}
                 <a href="https://blog.naver.com/boyslog" target="_blank" rel="noopener noreferrer" style={{ color: "#8C97C4", textDecoration: "underline" }}>블로그</a>
                 를 통해 남겨 주세요.
@@ -1493,13 +1487,6 @@ export default function App() {
             onEdit={() => { setEditingEvent(detailEvent); setDetailEvent(null); }}
             onClose={() => setDetailEvent(null)}
           />
-        </Modal>
-      )}
-
-      {/* PIN gate modal */}
-      {pinModal && (
-        <Modal onClose={() => setPinModal(null)}>
-          <PinModal mode={pinModal} error={pinError} onSubmit={handlePinSubmit} onClose={() => setPinModal(null)} />
         </Modal>
       )}
 
