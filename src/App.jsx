@@ -214,6 +214,18 @@ function normalizeTitles(list) {
   return { next, changed: diffs.length, diffs };
 }
 
+// 필터 드롭다운: 기본 화살표 대신 오른쪽에서 12px 띄운 화살표 사용
+const SELECT_ARROW_STYLE = {
+  appearance: "none",
+  WebkitAppearance: "none",
+  MozAppearance: "none",
+  backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23111111' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>\")",
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 12px center",
+  backgroundSize: "16px 16px",
+  paddingRight: 36,
+};
+
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -1396,7 +1408,7 @@ export default function App() {
           <div className="flex gap-1.5 mt-3">
             <select
               className="border-0 rounded-lg px-2 py-2 text-sm font-medium"
-              style={{ background: "#F0F0F2", flex: "0 0 100px" }}
+              style={{ background: "#F0F0F2", flex: "0 0 100px", ...SELECT_ARROW_STYLE }}
               value={filterCategory}
               onChange={(e) => {
                 const cat = e.target.value;
@@ -1416,7 +1428,7 @@ export default function App() {
             {filterCategory !== "ALL" && (
               <select
                 className="border-0 rounded-lg px-2 py-2 text-sm font-medium flex-1 min-w-0"
-                style={{ background: "#F0F0F2" }}
+                style={{ background: "#F0F0F2", ...SELECT_ARROW_STYLE }}
                 value={filterValue}
                 onChange={(e) => setFilterValue(e.target.value)}
               >
