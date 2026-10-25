@@ -166,6 +166,54 @@ function fillMembersFromCps(list) {
   return { next, changed };
 }
 
+// 영문 제목 표기 통일 (Title Case). 한글/태국어는 건드리지 않고, 영문 단어만 정리한다.
+const TITLE_SMALL_WORDS = new Set(["a", "an", "and", "as", "at", "but", "by", "for", "in", "of", "on", "or", "the", "to", "with", "x", "vs", "via"]);
+const TITLE_ACRONYMS = new Set(["DMD", "USA", "UK", "TV", "TBC", "GMM", "MV", "OST", "EP", "VIP", "SNS", "DJ", "PR", "FC", "MC", "ID", "CP", "PD"]);
+
+function toTitleCaseEn(title) {
+  if (!title) return title;
+  const tokens = title.split(/(\s+)/);
+  const latinWords = tokens.filter((t) => /[A-Za-z]/.test(t) && !/[^\x00-\x7F]/.test(t));
+  const wordCore = (t) => t.replace(/[^A-Za-z]/g, "");
+  const isUpper = (w) => w.length > 0 && w === w.toUpperCase();
+  const allCapsTitle = latinWords.length > 1 && latinWords.every((t) => isUpper(wordCore(t)));
+  let startOfPhrase = true;
+  const out = tokens.map((tok) => {
+    if (/^\s+$/.test(tok) || tok === "") return tok;
+    const prevStart = startOfPhrase;
+    startOfPhrase = /[:–—]$/.test(tok);
+    if (!/[A-Za-z]/.test(tok) || /[^\x00-\x7F]/.test(tok)) return tok;
+    const fixPart = (part, first) => {
+      const core = wordCore(part);
+      if (!core) return part;
+      const lower = core === core.toLowerCase();
+      const upper = isUpper(core);
+      const mixed = !lower && !upper;
+      const cap = (p) => p.replace(/[A-Za-z]/, (c) => c.toUpperCase());
+      if (mixed && !/^[A-Z][a-z]+$/.test(core)) return part;
+      if (upper && !allCapsTitle) return part;
+      if (upper && (TITLE_ACRONYMS.has(core) || core.length === 1)) return part;
+      const low = part.toLowerCase();
+      if (!first && TITLE_SMALL_WORDS.has(core.toLowerCase())) return low;
+      return cap(low);
+    };
+    return tok.split("-").map((p, i) => fixPart(p, prevStart && i === 0)).join("-");
+  });
+  return out.join("");
+}
+
+// 모든 일정의 영문 제목을 통일. 바뀌는 항목 목록도 함께 돌려준다.
+function normalizeTitles(list) {
+  const diffs = [];
+  const next = list.map((ev) => {
+    const t = toTitleCaseEn(ev.title);
+    if (t === ev.title) return ev;
+    diffs.push({ id: ev.id, before: ev.title, after: t });
+    return { ...ev, title: t };
+  });
+  return { next, changed: diffs.length, diffs };
+}
+
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -776,7 +824,7 @@ function EventDetail({ event, cpList, onEdit, onClose, canEdit }) {
 }
 
 // ---------- Settings ----------
-function SettingsModal({ settings, schedules, onSave, onClose, onImportSchedules, onBulkFill }) {
+function SettingsModal({ settings, schedules, onSave, onClose, onImportSchedules, onBulkFill, onNormalizeTitles }) {
   const [cpList, setCpList] = useState(settings.cpList.map((c) => ({ ...c })));
   const [memberList, setMemberList] = useState([...settings.memberList]);
   const [newMember, setNewMember] = useState("");
@@ -792,6 +840,10 @@ function SettingsModal({ settings, schedules, onSave, onClose, onImportSchedules
   const [bulkConfirm, setBulkConfirm] = useState(false);
   const [bulkMsg, setBulkMsg] = useState("");
   const bulkCount = fillMembersFromCps(schedules || []).changed;
+  const [titleConfirm, setTitleConfirm] = useState(false);
+  const [titleMsg, setTitleMsg] = useState("");
+  const titleDiffs = normalizeTitles(schedules || []).diffs;
+  const titleCount = titleDiffs.length;
 
   const handleImport = () => {
     try {
@@ -982,6 +1034,37 @@ function SettingsModal({ settings, schedules, onSave, onClose, onImportSchedules
         style={{ background: bulkConfirm ? "#111111" : "#F0F0F2", color: bulkConfirm ? "#fff" : "#111111", opacity: bulkCount === 0 ? 0.4 : 1 }}
       >
         {bulkConfirm ? `${bulkCount}개 일정에 적용할까요? 한 번 더 누르면 저장돼요` : "일괄 채우기"}
+      </button>
+
+      <h3 className="text-sm font-semibold mb-2">영문 제목 표기 통일</h3>
+      <p className="text-xs mb-2" style={{ color: "#8E8E93" }}>
+        영문 제목을 "Duang Fansign Event in Japan" 형식(단어 첫 글자 대문자, in/of/with 등은 소문자)으로 맞춰요. 한글·태국어는 그대로 두고, DMD·USA 같은 약어와 TeeTee처럼 대소문자가 섞인 이름은 유지해요.
+      </p>
+      <p className="text-xs mb-2" style={{ color: "#111111" }}>
+        {titleMsg || (titleCount > 0 ? `변경 대상 일정 ${titleCount}개` : "바꿀 제목이 없어요. 이미 모두 통일되어 있어요.")}
+      </p>
+      {titleCount > 0 && !titleMsg && (
+        <div className="mb-2 rounded-md p-2 text-xs" style={{ background: "#F8F8F8", maxHeight: 140, overflowY: "auto", color: "#4A4A4A" }}>
+          {titleDiffs.map((d) => (
+            <div key={d.id} className="mb-1.5">
+              <div style={{ color: "#8E8E93", textDecoration: "line-through" }}>{d.before}</div>
+              <div>{d.after}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      <button
+        disabled={titleCount === 0}
+        onClick={() => {
+          if (!titleConfirm) { setTitleConfirm(true); setTitleMsg(""); return; }
+          const n = onNormalizeTitles();
+          setTitleConfirm(false);
+          setTitleMsg(`${n}개 일정 제목을 통일했어요.`);
+        }}
+        className="w-full py-2 rounded-md text-sm font-medium mb-5"
+        style={{ background: titleConfirm ? "#111111" : "#F0F0F2", color: titleConfirm ? "#fff" : "#111111", opacity: titleCount === 0 ? 0.4 : 1 }}
+      >
+        {titleConfirm ? `${titleCount}개 제목을 바꿀까요? 한 번 더 누르면 저장돼요` : "제목 일괄 통일"}
       </button>
 
       <button
@@ -1195,6 +1278,11 @@ export default function App() {
   };
   const handleBulkFill = () => {
     const { next, changed } = fillMembersFromCps(schedules);
+    if (changed > 0) persistSchedules(next);
+    return changed;
+  };
+  const handleNormalizeTitles = () => {
+    const { next, changed } = normalizeTitles(schedules);
     if (changed > 0) persistSchedules(next);
     return changed;
   };
@@ -1581,6 +1669,7 @@ export default function App() {
             settings={settings}
             schedules={schedules}
             onBulkFill={handleBulkFill}
+            onNormalizeTitles={handleNormalizeTitles}
             onSave={(next) => { persistSettings({ ...settings, ...next }); setShowSettings(false); }}
             onClose={() => setShowSettings(false)}
             onImportSchedules={handleImportSchedules}
