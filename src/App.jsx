@@ -318,8 +318,7 @@ function TicketChip({ color, colors, label, onClick, muted }) {
 }
 
 // 아이폰 캘린더 앱 스타일의 일정 목록 아이템 (시간 열 + 컬러바 + 제목/부제)
-function DayListItem({ ev, colors, subtitle, onClick }) {
-  const barColor = colors && colors[0] ? colors[0] : "#A8A296";
+function DayListItem({ ev, cpTags, subtitle, onClick }) {
   return (
     <button
       onClick={onClick}
@@ -331,14 +330,19 @@ function DayListItem({ ev, colors, subtitle, onClick }) {
           {ev.allDay ? "종일" : (ev.time || "미확정")}
         </p>
       </div>
-      <div className="flex flex-shrink-0" style={{ gap: 2 }}>
-        {colors.map((c, i) => (
-          <span key={i} style={{ width: 3, borderRadius: 999, background: c, alignSelf: "stretch" }} />
-        ))}
-      </div>
       <div className="flex-1 min-w-0">
         <p className="text-base font-bold truncate" style={{ color: "#111111", fontFamily: "'Inter',sans-serif" }}><TitleWithIcons title={ev.title} /></p>
-        {subtitle && <p className="text-sm truncate" style={{ color: "#8E8E93", fontFamily: "'Inter',sans-serif" }}>{subtitle}</p>}
+        {(cpTags && cpTags.length > 0) || subtitle ? (
+          <p className="text-sm truncate" style={{ color: "#8E8E93", fontFamily: "'Inter',sans-serif" }}>
+            {(cpTags || []).map((t, i) => (
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, marginRight: 8 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 999, background: t.color, display: "inline-block", flexShrink: 0 }} />
+                {t.name}
+              </span>
+            ))}
+            {cpTags && cpTags.length > 0 && subtitle ? "· " : ""}{subtitle}
+          </p>
+        ) : null}
       </div>
       <div className="flex-shrink-0 self-center">
         <ChevronRight size={16} style={{ color: "#C7C7CC" }} />
@@ -1260,15 +1264,20 @@ export default function App() {
     return parts.length ? parts.join(" · ") : ev.title;
   };
 
-  // 제목과 별개로 CP/멤버/Gen 정보만 부제로 반환 (없으면 빈 문자열)
+  // CP는 색 점 + 이름으로 따로 보여주고, 나머지(멤버/Gen)만 텍스트 부제로 반환
+  const cpTagsForEvent = (ev) =>
+    (ev.cps || [])
+      .map((id) => settings.cpList.find((c) => c.id === id))
+      .filter(Boolean)
+      .map((c) => ({ name: c.name, color: c.color }));
+
   const subtitleForEvent = (ev) => {
-    const cpNames = (ev.cps || []).map((id) => settings.cpList.find((c) => c.id === id)?.name).filter(Boolean);
+    const hasCp = cpTagsForEvent(ev).length > 0;
     const cpMemberSet = new Set((ev.cps || []).flatMap((id) => CP_MEMBERS[id] || []));
     const extraMembers = (ev.members || []).filter((m) => !cpMemberSet.has(m));
     const parts = [];
-    if (cpNames.length) parts.push(cpNames.join(" · "));
     if (extraMembers.length) parts.push(extraMembers.join(", "));
-    if (!parts.length && ev.gens?.length) parts.push(ev.gens.join("/"));
+    if (!hasCp && !parts.length && ev.gens?.length) parts.push(ev.gens.join("/"));
     return parts.join(" · ");
   };
 
@@ -1383,7 +1392,7 @@ export default function App() {
                     <DayListItem
                       key={ev.id}
                       ev={ev}
-                      colors={colorsForEvent(ev)}
+                      cpTags={cpTagsForEvent(ev)}
                       subtitle={subtitleForEvent(ev)}
                       onClick={() => setDetailEvent(ev)}
                     />
@@ -1626,7 +1635,7 @@ export default function App() {
                 <DayListItem
                   key={ev.id}
                   ev={ev}
-                  colors={colorsForEvent(ev)}
+                  cpTags={cpTagsForEvent(ev)}
                   subtitle={subtitleForEvent(ev)}
                   onClick={() => setDetailEvent(ev)}
                 />
