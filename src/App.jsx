@@ -1415,7 +1415,7 @@ export default function App() {
                       isSpecificFilter && visibleEvents.length > 0
                         ? dayFillColor
                         : filterCategory === "ALL" && birthdayNames.length > 0
-                        ? "#9DA9EBCC"
+                        ? "#3157B5CC"
                         : "#F8F8F8",
                     opacity: inMonth ? 1 : 0.35,
                     minHeight: 0,
@@ -1429,7 +1429,7 @@ export default function App() {
                         height: 24,
                         borderRadius: 999,
                         background: isToday ? "#111111" : "transparent",
-                        color: isToday ? "#fff" : isSpecificFilter && visibleEvents.length > 0 ? "#fff" : "#111111",
+                        color: isToday ? "#fff" : (isSpecificFilter && visibleEvents.length > 0) || (filterCategory === "ALL" && birthdayNames.length > 0) ? "#fff" : "#111111",
                       }}
                     >
                       {d.getDate()}
@@ -1515,7 +1515,7 @@ export default function App() {
               const [, mm, dd] = dayKey.split("-");
               const names = Object.entries(settings.birthdays || {}).filter(([, md]) => md === `${mm}-${dd}`).map(([n]) => n);
               return names.length > 0 ? (
-                <p className="text-base font-medium mb-3 flex items-center gap-2"><Cake size={19} style={{ color: "#9DA9EB" }} /> {names.join(", ")} 생일</p>
+                <p className="text-base font-medium mb-3 flex items-center gap-2"><Cake size={19} style={{ color: "#3157B5" }} /> {names.join(", ")} 생일</p>
               ) : null;
             })()}
             <div>
