@@ -864,7 +864,10 @@ function SettingsModal({ settings, schedules, onSave, onClose, onImportSchedules
         return;
       }
       setPendingImport(parsed);
-      setImportMsg(`${parsed.length}개 일정 확인됨 — 아래 "저장" 버튼을 눌러야 실제로 반영돼요.`);
+      const existingIds = new Set((schedules || []).map((x) => x.id));
+      const overwrite = parsed.filter((x) => x && x.id && existingIds.has(x.id)).length;
+      const add = parsed.length - overwrite;
+      setImportMsg(`${parsed.length}개 일정 확인됨 (덮어쓰기 ${overwrite}개 · 새로 추가 ${add}개) — 아래 "저장" 버튼을 눌러야 실제로 반영돼요.`);
       setImportText("");
     } catch (e) {
       setImportMsg("JSON 형식이 올바르지 않아요. 붙여넣은 내용을 다시 확인해주세요.");
@@ -1008,7 +1011,7 @@ function SettingsModal({ settings, schedules, onSave, onClose, onImportSchedules
 
       <h3 className="text-sm font-semibold mb-2">일정 가져오기 (JSON)</h3>
       <p className="text-xs mb-2" style={{ color: "#8E8E93" }}>
-        일정 데이터(JSON 배열)를 아래에 붙여넣고 "가져오기"를 누르면 현재 일정 목록에 추가돼요.
+        일정 데이터(JSON 배열)를 아래에 붙여넣고 "가져오기"를 누르면 현재 일정 목록에 반영돼요. id가 같은 일정은 덮어쓰고, 없는 id는 새로 추가해요.
       </p>
       <textarea
         className="w-full border rounded-md px-2 py-1.5 text-xs font-mono mb-2"
@@ -1297,22 +1300,38 @@ export default function App() {
     if (changed > 0) persistSchedules(next);
     return changed;
   };
+  // 가져오기: id가 기존 일정과 같으면 덮어쓰기(JSON에 있는 항목만 교체), 없으면 새로 추가
   const handleImportSchedules = (newEvents) => {
-    const existingIds = new Set(schedules.map((s) => s.id));
-    const withIds = newEvents.map((ev) => ({
-      id: ev.id && !existingIds.has(ev.id) ? ev.id : uid(),
-      title: ev.title || "",
-      date: ev.date || todayKey,
-      time: ev.time || "",
-      allDay: ev.allDay || false,
-      cps: ev.cps || [],
-      gens: ev.gens || [],
-      members: ev.members || [],
-      memo: ev.memo || "",
-      imageUrl: ev.imageUrl || "",
-      country: ev.country || "태국",
-    }));
-    persistSchedules([...schedules, ...withIds]);
+    const byId = new Map(schedules.map((s) => [s.id, s]));
+    const added = [];
+    const addedIdx = new Map();
+    newEvents.forEach((ev) => {
+      const existing = ev.id ? byId.get(ev.id) : null;
+      if (existing) {
+        const patch = {};
+        ["title", "date", "time", "allDay", "cps", "gens", "members", "memo", "imageUrl", "country"].forEach((k) => {
+          if (ev[k] !== undefined) patch[k] = ev[k];
+        });
+        byId.set(ev.id, { ...existing, ...patch });
+        return;
+      }
+      const item = {
+        id: ev.id && !addedIdx.has(ev.id) ? ev.id : uid(),
+        title: ev.title || "",
+        date: ev.date || todayKey,
+        time: ev.time || "",
+        allDay: ev.allDay || false,
+        cps: ev.cps || [],
+        gens: ev.gens || [],
+        members: ev.members || [],
+        memo: ev.memo || "",
+        imageUrl: ev.imageUrl || "",
+        country: ev.country || "태국",
+      };
+      if (ev.id) addedIdx.set(ev.id, true);
+      added.push(item);
+    });
+    persistSchedules([...schedules.map((s) => byId.get(s.id)), ...added]);
   };
 
   if (loading || !authReady) {
